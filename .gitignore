@@ -1,0 +1,18 @@
+# Backups & local
+*.bak
+*.trn
+*.mdf
+*.ldf
+.vs/
+.vscode/
+*.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Web build output
+web/node_modules/
+web/bin/
+web/obj/
+web/dist/

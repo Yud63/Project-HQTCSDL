@@ -1,0 +1,47 @@
+name: Build FilmLabDB
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+env:
+  SA_PASSWORD: "Str0ng!Passw0rd#2022"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Start SQL Server 2022
+        run: |
+          docker run -d --name sql -e ACCEPT_EULA=Y -e "MSSQL_SA_PASSWORD=$SA_PASSWORD" \
+            -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest
+
+      - name: Wait for SQL Server
+        run: |
+          SQLCMD=$(docker exec sql bash -c 'ls /opt/mssql-tools18/bin/sqlcmd 2>/dev/null || ls /opt/mssql-tools/bin/sqlcmd')
+          echo "SQLCMD=$SQLCMD" >> "$GITHUB_ENV"
+          for i in $(seq 1 40); do
+            if docker exec sql "$SQLCMD" -S localhost -U sa -P "$SA_PASSWORD" -C -Q "SELECT 1" >/dev/null 2>&1; then
+              echo "SQL Server ready"; exit 0
+            fi
+            sleep 3
+          done
+          echo "SQL Server did not start"; exit 1
+
+      - name: Build database (99_run_all.sql)
+        run: |
+          docker cp database sql:/tmp/database
+          docker exec -w /tmp/database sql "$SQLCMD" -S localhost -U sa -P "$SA_PASSWORD" \
+            -C -b -f 65001 -v ROOT=. REBUILD=1 -i 99_run_all.sql
+
+      - name: Run tests
+        run: |
+          docker cp tests sql:/tmp/tests
+          for f in tests/*.sql; do
+            echo "== $f"
+            docker exec -w /tmp/tests sql "$SQLCMD" -S localhost -U sa -P "$SA_PASSWORD" \
+              -C -b -f 65001 -i "$(basename "$f")"
+          done
