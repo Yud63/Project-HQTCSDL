@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/04_seed/sample/audit.sql
-   Module  : audit - System / Audit (M10)
-   Purpose : Dữ liệu mẫu để test và demo cho module audit. Dùng N'...' cho tiếng Việt có dấu; tra khóa bằng khóa tự nhiên (Email, Tên lab), không gắn cứng ID.
-   Owner   : TBD (chưa chia việc)
-   Depends : tất cả module (chỉ ghi log)
-   Re-run  : Chạy sau REBUILD=1. Không gắn cứng ID của bảng IDENTITY (xem Conventions).
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Module  : audit - M10 System / Audit
+   Purpose : Dữ liệu mẫu cho test/demo (số dòng gợi ý trong docs/Requirements.md). Tiếng Việt có dấu dùng N'...'.
+   Owner   : A (xem docs/Phan-cong.md)
+   Depends : (không FK)
+   Re-run  : Chạy sau REBUILD=1. Sample seed không gắn cứng ID của bảng IDENTITY.
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
 -- TODO: viết nội dung tại đây
-
