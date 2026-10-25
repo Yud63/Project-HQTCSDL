@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/05_functions/arc.sql
-   Module  : arc - Digital Archive (M5)
-   Purpose : Scalar / table-valued function của module arc. Đặt tên fn_<Ten>.
-   Owner   : TBD (chưa chia việc)
-   Depends : iam, ord
+   Module  : arc - M5 Digital Archive
+   Purpose : Function: fn_GetPhotoMetadata.
+   Owner   : C (xem docs/Phan-cong.md)
+   Depends : iam, lab, ord
    Re-run  : CREATE OR ALTER - chạy lại bao nhiêu lần cũng được.
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
 -- TODO: viết nội dung tại đây
-

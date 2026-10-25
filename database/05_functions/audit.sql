@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/05_functions/audit.sql
-   Module  : audit - System / Audit (M10)
-   Purpose : Scalar / table-valued function của module audit. Đặt tên fn_<Ten>.
-   Owner   : TBD (chưa chia việc)
-   Depends : tất cả module (chỉ ghi log)
+   Module  : audit - M10 System / Audit
+   Purpose : Function: (chưa có).
+   Owner   : A (xem docs/Phan-cong.md)
+   Depends : (không FK)
    Re-run  : CREATE OR ALTER - chạy lại bao nhiêu lần cũng được.
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
 -- TODO: viết nội dung tại đây
-

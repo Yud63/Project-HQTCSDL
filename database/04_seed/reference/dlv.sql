@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/04_seed/reference/dlv.sql
-   Module  : dlv - Delivery (M4)
-   Purpose : Dữ liệu danh mục cố định của module dlv (vai trò, trạng thái, loại dịch vụ...). Procedure/Trigger phụ thuộc vào đây.
-   Owner   : TBD (chưa chia việc)
+   Module  : dlv - M4 Delivery
+   Purpose : Dữ liệu danh mục cố định: (không có dữ liệu reference).
+   Owner   : A (xem docs/Phan-cong.md)
    Depends : iam, ord
-   Re-run  : Chạy sau REBUILD=1. Không gắn cứng ID của bảng IDENTITY (xem Conventions).
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Re-run  : Chạy sau REBUILD=1. Sample seed không gắn cứng ID của bảng IDENTITY.
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
-
+-- Không có dữ liệu danh mục cố định cho module này.

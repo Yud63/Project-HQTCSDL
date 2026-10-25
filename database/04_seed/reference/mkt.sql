@@ -1,14 +1,27 @@
 /* ============================================================
    File    : database/04_seed/reference/mkt.sql
-   Module  : mkt - Marketplace (M7)
-   Purpose : Dữ liệu danh mục cố định của module mkt (vai trò, trạng thái, loại dịch vụ...). Procedure/Trigger phụ thuộc vào đây.
-   Owner   : TBD (chưa chia việc)
+   Module  : mkt - M7 Marketplace
+   Purpose : Dữ liệu danh mục cố định: ListingCategories (6 dòng).
+   Owner   : D (xem docs/Phan-cong.md)
    Depends : iam
-   Re-run  : Chạy sau REBUILD=1. Không gắn cứng ID của bảng IDENTITY (xem Conventions).
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Re-run  : Chạy sau REBUILD=1. Sample seed không gắn cứng ID của bảng IDENTITY.
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
+SET QUOTED_IDENTIFIER ON;  -- bắt buộc cho filtered index, spatial index, computed column
+SET ANSI_NULLS ON;
+GO
 
+SET NOCOUNT ON;
+
+-- Danh mục loại hàng Marketplace
+INSERT INTO mkt.ListingCategories (CategoryId, CategoryCode, CategoryName) VALUES
+    (1, N'CAMERA', N'Máy ảnh'),
+    (2, N'LENS', N'Ống kính'),
+    (3, N'FILM', N'Phim'),
+    (4, N'FLASH', N'Đèn flash'),
+    (5, N'ACCESSORY', N'Phụ kiện'),
+    (6, N'OTHER', N'Khác');
+GO

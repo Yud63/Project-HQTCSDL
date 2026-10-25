@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/05_functions/dlv.sql
-   Module  : dlv - Delivery (M4)
-   Purpose : Scalar / table-valued function của module dlv. Đặt tên fn_<Ten>.
-   Owner   : TBD (chưa chia việc)
+   Module  : dlv - M4 Delivery
+   Purpose : Function: fn_IsValidDeliveryTransition.
+   Owner   : A (xem docs/Phan-cong.md)
    Depends : iam, ord
    Re-run  : CREATE OR ALTER - chạy lại bao nhiêu lần cũng được.
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
 -- TODO: viết nội dung tại đây
-

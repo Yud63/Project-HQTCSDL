@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/04_seed/reference/audit.sql
-   Module  : audit - System / Audit (M10)
-   Purpose : Dữ liệu danh mục cố định của module audit (vai trò, trạng thái, loại dịch vụ...). Procedure/Trigger phụ thuộc vào đây.
-   Owner   : TBD (chưa chia việc)
-   Depends : tất cả module (chỉ ghi log)
-   Re-run  : Chạy sau REBUILD=1. Không gắn cứng ID của bảng IDENTITY (xem Conventions).
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Module  : audit - M10 System / Audit
+   Purpose : Dữ liệu danh mục cố định: (không có dữ liệu reference).
+   Owner   : A (xem docs/Phan-cong.md)
+   Depends : (không FK)
+   Re-run  : Chạy sau REBUILD=1. Sample seed không gắn cứng ID của bảng IDENTITY.
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
-
+-- Không có dữ liệu danh mục cố định cho module này.

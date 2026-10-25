@@ -16,7 +16,7 @@ GO
 
 CREATE UNIQUE NONCLUSTERED INDEX UX_Delivery_ActiveLeg
     ON dlv.DeliveryRequests (OrderId, Direction)
-    WHERE Status NOT IN ('Failed','Cancelled') AND IsDeleted = 0;
+    WHERE Status IN ('Requested','Assigned','PickedUp','Delivered') AND IsDeleted = 0;
 GO
 
 CREATE NONCLUSTERED INDEX IX_Delivery_Partner_Status

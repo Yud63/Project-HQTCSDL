@@ -1,14 +1,13 @@
 /* ============================================================
    File    : database/04_seed/reference/ai.sql
-   Module  : ai - AI Support (M9)
-   Purpose : Dữ liệu danh mục cố định của module ai (vai trò, trạng thái, loại dịch vụ...). Procedure/Trigger phụ thuộc vào đây.
-   Owner   : TBD (chưa chia việc)
-   Depends : iam, lab, ord
-   Re-run  : Chạy sau REBUILD=1. Không gắn cứng ID của bảng IDENTITY (xem Conventions).
-   Ref     : docs/Conventions.md, docs/Contracts.md
+   Module  : ai - M9 AI Support
+   Purpose : Dữ liệu danh mục cố định: (không có dữ liệu reference).
+   Owner   : E (xem docs/Phan-cong.md)
+   Depends : iam, lab, com
+   Re-run  : Chạy sau REBUILD=1. Sample seed không gắn cứng ID của bảng IDENTITY.
+   Ref     : docs/Conventions.md, docs/Contracts.md, docs/DataDictionary.xlsx
    ============================================================ */
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
-
+-- Không có dữ liệu danh mục cố định cho module này.
