@@ -7,8 +7,9 @@
 | Thư mục / File | Nội dung |
 |---|---|
 | `database/` | Toàn bộ T-SQL, chạy theo số thứ tự, `99_run_all.sql` dựng lại tất cả |
-| `docs/` | Conventions, Contracts, Git-Workflow, (Requirements, DataDictionary, BaoCao) |
-| `diagrams/` | ERD |
+| `docs/` | Requirements, DataDictionary.xlsx, Contracts, Normalization, Phan-cong, Conventions, Git-Workflow, (BaoCao làm sau) |
+| `diagrams/` | ERD (Mermaid, hiển thị trực tiếp trên GitHub) |
+| `tools/` | Sinh ERD, Data Dictionary, Contracts từ một nguồn dữ liệu (`schema_spec.py`) |
 | `templates/` | Mẫu bảng, procedure, trigger |
 | `tests/` | Script kiểm thử |
 | `demo/` | Kịch bản demo (`demo.sql`) |
@@ -24,7 +25,7 @@
 | SSMS | Mở `database/99_run_all.sql`, bật *Query > SQLCMD Mode*, bỏ comment 2 dòng `:setvar` rồi Execute |
 
 ## Module (schema)
-`iam` - `lab` - `ord` - `dlv` - `arc` - `mkt` - `com` - `ai` - `audit` (chi tiết: `docs/Contracts.md`).
+`iam` - `lab` - `ord` (gồm Review, Complaint) - `dlv` - `arc` - `mkt` - `com` - `ai` - `audit`: 41 bảng, 77 khóa ngoại (chi tiết: `docs/Contracts.md`, `diagrams/ERD.md`).
 
 ## Quy ước và quy trình
 Đọc `docs/Conventions.md` và `docs/Git-Workflow.md` trước khi viết code.
