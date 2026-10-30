@@ -30,5 +30,5 @@ INSERT INTO ord.ProcessingStages (StageId, StageCode, StageName, SortOrder, IsTe
     (10, N'QualityCheck', N'Kiểm tra chất lượng', 100, 0),
     (11, N'ReadyToReturn', N'Sẵn sàng trả phim/ảnh', 110, 0),
     (12, N'Completed', N'Hoàn tất', 120, 1),
-    (13, N'Cancelled', N'Đã hủy', 250, 1);
+    (13, N'Cancelled', N'Đã hủy', 255, 1);
 GO

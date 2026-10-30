@@ -9,6 +9,19 @@ env:
   SA_PASSWORD: "Str0ng!Passw0rd#2022"
 
 jobs:
+  spec:
+    name: Validate schema spec and generated docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate schema_spec.py (FK, kiểu, vòng phụ thuộc)
+        run: python3 tools/spec_loader.py
+      - name: Regenerate ERD and docs, fail if out of date
+        run: |
+          python3 tools/gen_erd.py
+          python3 tools/gen_docs.py
+          git diff --exit-code -- diagrams/ERD.md docs/Contracts.md docs/Normalization.md docs/Phan-cong.md
+
   build:
     runs-on: ubuntu-latest
     steps:

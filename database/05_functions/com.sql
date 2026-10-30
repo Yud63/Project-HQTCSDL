@@ -10,4 +10,20 @@
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+CREATE OR ALTER FUNCTION com.fn_EventSeatsLeft (@EventId INT)
+RETURNS INT
+AS
+BEGIN
+    DECLARE @Left INT;
+    SELECT @Left = e.Capacity - (SELECT COUNT(*) FROM com.EventRegistrations r
+                                 WHERE r.EventId = e.EventId AND r.Status IN (N'Registered', N'Attended'))
+    FROM com.Events e
+    WHERE e.EventId = @EventId AND e.IsDeleted = 0;
+    IF @Left < 0 SET @Left = 0;
+    RETURN @Left;
+END
+GO

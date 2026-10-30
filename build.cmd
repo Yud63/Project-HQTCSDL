@@ -10,3 +10,5 @@ sqlcmd -S %SERVER% -E -b -C -f 65001 -v ROOT="." REBUILD=%REBUILD% -i 99_run_all
 if errorlevel 1 (echo BUILD FAILED & exit /b 1)
 cd /d "%~dp0tests"
 sqlcmd -S %SERVER% -E -b -C -f 65001 -i 00_smoke_test.sql
+if errorlevel 1 (echo SMOKE FAILED & exit /b 1)
+sqlcmd -S %SERVER% -E -b -C -f 65001 -i 01_schema_check.sql

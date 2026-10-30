@@ -10,4 +10,21 @@
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+CREATE OR ALTER FUNCTION arc.fn_GetPhotoMetadata (@ScanFileId UNIQUEIDENTIFIER)
+RETURNS TABLE
+AS
+RETURN
+(
+    SELECT pm.ScanFileId,
+           j.[key]   AS MetaKey,
+           j.[value] AS MetaValue,
+           j.[type]  AS JsonType
+    FROM arc.PhotoMetadata pm
+    CROSS APPLY OPENJSON(pm.ExtraJson) j
+    WHERE pm.ScanFileId = @ScanFileId
+);
+GO

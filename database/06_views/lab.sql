@@ -10,4 +10,18 @@
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+CREATE OR ALTER VIEW lab.vw_TopLabs
+AS
+SELECT ROW_NUMBER() OVER (ORDER BY l.AvgRating DESC, l.ReviewCount DESC, l.LabId) AS RankNo,
+       l.LabId, l.LabName, l.City, l.District, l.AvgRating, l.ReviewCount,
+       s.MinPrice, s.MinTurnaroundDays
+FROM lab.FilmLabs l
+OUTER APPLY (SELECT MIN(ls.UnitPrice) AS MinPrice, MIN(CAST(ls.TurnaroundDays AS INT)) AS MinTurnaroundDays
+             FROM lab.LabServices ls
+             WHERE ls.LabId = l.LabId AND ls.IsActive = 1 AND ls.IsDeleted = 0) s
+WHERE l.ApprovalStatus = N'Approved' AND l.IsDeleted = 0 AND l.ReviewCount > 0;
+GO
