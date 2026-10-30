@@ -7,3 +7,4 @@ cd "$(dirname "$0")/database"
 sqlcmd -S "$SERVER" -U "$USER_" -P "$PASS" -C -b -f 65001 -v ROOT="." REBUILD="$REBUILD" -i 99_run_all.sql
 cd ../tests
 sqlcmd -S "$SERVER" -U "$USER_" -P "$PASS" -C -b -f 65001 -i 00_smoke_test.sql
+sqlcmd -S "$SERVER" -U "$USER_" -P "$PASS" -C -b -f 65001 -i 01_schema_check.sql
