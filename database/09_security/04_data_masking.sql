@@ -10,5 +10,21 @@
 USE FilmLabDB;
 GO
 
--- TODO: viết nội dung tại đây
+SET QUOTED_IDENTIFIER ON;
+SET ANSI_NULLS ON;
+GO
+
+-- ===== 1. Che dữ liệu liên lạc =====
+ALTER TABLE iam.Users
+    ALTER COLUMN Phone ADD MASKED WITH (FUNCTION = 'partial(3, "XXXX", 2)');
+ALTER TABLE iam.Users
+    ALTER COLUMN Email ADD MASKED WITH (FUNCTION = 'email()');
+ALTER TABLE iam.Addresses
+    ALTER COLUMN Phone ADD MASKED WITH (FUNCTION = 'partial(3, "XXXX", 2)');
+GO
+
+-- ===== 2. Quyền xem dữ liệu thật (UNMASK) =====
+GRANT UNMASK TO role_Admin;                              -- Admin xem tất cả
+GRANT UNMASK ON iam.Addresses(Phone) TO role_Delivery;   -- shipper cần SĐT người nhận
+GO
 
