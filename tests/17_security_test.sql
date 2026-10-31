@@ -24,6 +24,7 @@ CREATE USER u_dlv WITHOUT LOGIN;  ALTER ROLE role_Delivery ADD MEMBER u_dlv;
 CREATE USER u_adm WITHOUT LOGIN;  ALTER ROLE role_Admin    ADD MEMBER u_adm;
 
 DECLARE @e INT, @g INT, @b INT, @x INT, @err INT;
+DECLARE @v TABLE (OrderId INT);
 
 -- T1: Customer 6 chỉ thấy đơn của mình (BR-ORD-08)
 SET @e = (SELECT COUNT(*) FROM ord.Orders WHERE CustomerId = 6);
