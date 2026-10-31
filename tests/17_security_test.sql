@@ -47,11 +47,14 @@ ELSE PRINT N'FAIL: T2 Không có UserId thì 0 đơn';
 SET @e = (SELECT COUNT(*) FROM ord.Orders o JOIN lab.FilmLabs l ON l.LabId = o.LabId WHERE l.OwnerUserId = 2);
 EXECUTE AS USER = N'u_lab';
 EXEC sp_set_session_context N'UserId', 2;
-SET @g = (SELECT COUNT(*) FROM ord.Orders);
-SET @b = (SELECT COUNT(*) FROM ord.Orders o
-          WHERE NOT EXISTS (SELECT 1 FROM lab.FilmLabs l WHERE l.LabId = o.LabId AND l.OwnerUserId = 2));
+INSERT @v (OrderId) SELECT OrderId FROM ord.Orders;
 REVERT;
 EXEC sp_set_session_context N'UserId', NULL;
+SET @g = (SELECT COUNT(*) FROM @v);
+SET @b = (SELECT COUNT(*) FROM @v v
+          JOIN ord.Orders o ON o.OrderId = v.OrderId
+          JOIN lab.FilmLabs l ON l.LabId = o.LabId
+          WHERE l.OwnerUserId <> 2);
 IF @e > 0 AND @g = @e AND @b = 0 PRINT N'PASS: T3 LabOwner 2 chỉ thấy đơn lab mình';
 ELSE PRINT N'FAIL: T3 LabOwner 2 chỉ thấy đơn lab mình';
 
