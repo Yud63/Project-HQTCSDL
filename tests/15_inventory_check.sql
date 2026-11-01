@@ -9,7 +9,8 @@ CREATE TABLE #exp (SchemaName SYSNAME COLLATE DATABASE_DEFAULT,
                    ObjName    SYSNAME COLLATE DATABASE_DEFAULT,
                    Kind       CHAR(1) COLLATE DATABASE_DEFAULT);
 INSERT #exp VALUES
- -- Procedure (42)
+
+ -- Procedure (51)
  (N'iam',N'sp_RegisterUser','P'),
  (N'lab',N'sp_ApproveLab','P'),(N'lab',N'sp_SearchLabs','P'),(N'lab',N'sp_RecalcLabRating','P'),
  (N'ord',N'sp_CreateOrder','P'),(N'ord',N'sp_UpdateOrderStage','P'),(N'ord',N'sp_CancelOrder','P'),(N'ord',N'sp_ProcessPayment','P'),
@@ -21,6 +22,11 @@ INSERT #exp VALUES
  (N'com',N'sp_RegisterEvent','P'),(N'com',N'sp_PublishArticle','P'),(N'com',N'sp_ModerateArticle','P'),(N'com',N'sp_AddComment','P'),(N'com',N'sp_AcceptAnswer','P'),(N'com',N'sp_CancelEventRegistration','P'),
  (N'ai',N'sp_GetLabRecommendations','P'),(N'ai',N'sp_SaveUserPreferences','P'),(N'ai',N'sp_LogChatMessage','P'),(N'ai',N'sp_RecordRecommendationAction','P'),(N'ai',N'sp_ApproveKnowledgeDoc','P'),(N'ai',N'sp_PurgeOldLogs','P'),
  (N'audit',N'sp_WriteAudit','P'),
+ (N'iam',N'sp_SaveAddress','P'),(N'iam',N'sp_SetUserStatus','P'),(N'iam',N'sp_AssignRole','P'),
+ (N'lab',N'sp_SaveLabProfile','P'),(N'lab',N'sp_SaveLabService','P'),
+ (N'ord',N'sp_SetFeeConfig','P'),
+ (N'arc',N'sp_SaveAlbum','P'),(N'arc',N'sp_SetAlbumPhoto','P'),
+ (N'com',N'sp_SaveEvent','P'),
  -- Function (14 + 1)
  (N'lab',N'fn_LabCapacityLeft','F'),(N'lab',N'fn_DistanceKm','F'),
  (N'ord',N'fn_CalcOrderTotal','F'),(N'ord',N'fn_CalcPlatformFee','F'),(N'ord',N'fn_NextStage','F'),(N'ord',N'fn_IsValidTransition','F'),(N'ord',N'fn_CalcDeliveryFee','F'),(N'ord',N'fn_LabAvgRating','F'),

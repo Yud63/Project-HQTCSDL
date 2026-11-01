@@ -359,3 +359,131 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE com.sp_SaveEvent
+    @OrganizerId          INT,
+    @EventType            NVARCHAR(9),        -- Workshop | Photowalk
+    @Title                NVARCHAR(200),
+    @VenueName            NVARCHAR(200),
+    @AddressLine          NVARCHAR(255),
+    @City                 NVARCHAR(100),
+    @StartAt              DATETIME2(0),       -- giờ UTC, theo quy ước SYSUTCDATETIME()
+    @EndAt                DATETIME2(0),
+    @Capacity             SMALLINT,
+    @EventId              INT             = NULL,   -- NULL: tạo mới
+    @Description          NVARCHAR(2000)  = NULL,
+    @RegistrationDeadline DATETIME2(0)    = NULL,
+    @Latitude             FLOAT           = NULL,
+    @Longitude            FLOAT           = NULL,
+    @Fee                  DECIMAL(18,0)   = 0,
+    @HostLabId            INT             = NULL,
+    @Status               NVARCHAR(9)     = N'Draft',   -- Draft | Open | Closed
+    @NewEventId           INT             = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OrganizerId;
+
+        BEGIN TRAN;
+
+        DECLARE @CurOrganizer INT, @CurStatus NVARCHAR(9), @HostOwner INT, @Registered INT;
+        DECLARE @IsAdmin BIT = CASE WHEN EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                                                 WHERE ur.UserId = @OrganizerId AND r.RoleCode = N'Admin')
+                                    THEN 1 ELSE 0 END;
+
+        IF @EventId IS NOT NULL
+        BEGIN
+            SELECT @CurOrganizer = OrganizerId, @CurStatus = Status
+            FROM com.Events WITH (UPDLOCK, HOLDLOCK)
+            WHERE EventId = @EventId AND IsDeleted = 0;
+            IF @CurOrganizer IS NULL
+                THROW 50701, N'Sự kiện không tồn tại.', 1;
+        END;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.UserRoles ur
+                       JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                       JOIN iam.Users u ON u.UserId = ur.UserId
+                       WHERE ur.UserId = @OrganizerId AND r.RoleCode IN (N'Expert', N'LabOwner', N'Admin')
+                         AND u.IsActive = 1 AND u.IsDeleted = 0)
+            THROW 50703, N'Chỉ Expert, LabOwner hoặc Admin được tổ chức sự kiện.', 1;
+        IF @CurOrganizer IS NOT NULL AND @CurOrganizer <> @OrganizerId AND @IsAdmin = 0
+            THROW 50703, N'Chỉ người tổ chức hoặc Admin được sửa sự kiện.', 1;
+        IF @CurStatus IN (N'Cancelled', N'Completed')
+            THROW 50702, N'Sự kiện đã hủy hoặc đã hoàn tất, không sửa được.', 1;
+        IF @CurStatus IS NOT NULL AND @CurStatus <> N'Draft' AND @Status = N'Draft'
+            THROW 50702, N'Không đưa sự kiện đã công bố về Draft.', 1;
+
+        SET @Title = LTRIM(RTRIM(@Title));
+        SET @VenueName = LTRIM(RTRIM(@VenueName));
+        SET @AddressLine = LTRIM(RTRIM(@AddressLine));
+        SET @City = LTRIM(RTRIM(@City));
+        IF @EventType IS NULL OR @EventType NOT IN (N'Workshop', N'Photowalk')
+            THROW 50705, N'EventType phải là Workshop hoặc Photowalk.', 1;
+        IF @Status IS NULL OR @Status NOT IN (N'Draft', N'Open', N'Closed')
+            THROW 50705, N'Status chỉ được là Draft, Open hoặc Closed.', 1;
+        IF NULLIF(@Title, N'') IS NULL OR NULLIF(@VenueName, N'') IS NULL
+           OR NULLIF(@AddressLine, N'') IS NULL OR NULLIF(@City, N'') IS NULL
+            THROW 50705, N'Tiêu đề, địa điểm, địa chỉ và thành phố không được rỗng.', 1;
+        IF @StartAt IS NULL OR @EndAt IS NULL OR @EndAt <= @StartAt
+            THROW 50705, N'Thời gian kết thúc phải sau thời gian bắt đầu.', 1;
+        IF @EventId IS NULL AND @StartAt <= SYSUTCDATETIME()
+            THROW 50705, N'Sự kiện mới phải bắt đầu trong tương lai.', 1;
+        IF @RegistrationDeadline IS NOT NULL AND @RegistrationDeadline > @StartAt
+            THROW 50705, N'Hạn đăng ký không được sau giờ bắt đầu.', 1;
+        IF @Capacity IS NULL OR @Capacity < 1
+            THROW 50705, N'Sức chứa phải lớn hơn 0.', 1;
+        IF @Fee IS NULL OR @Fee < 0
+            THROW 50705, N'Phí phải từ 0 trở lên.', 1;
+        IF (@Latitude IS NULL AND @Longitude IS NOT NULL) OR (@Latitude IS NOT NULL AND @Longitude IS NULL)
+            THROW 50705, N'Phải truyền đủ cả vĩ độ và kinh độ.', 1;
+        IF (@Latitude < -90 OR @Latitude > 90) OR (@Longitude < -180 OR @Longitude > 180)
+            THROW 50705, N'Vĩ độ hoặc kinh độ nằm ngoài phạm vi hợp lệ.', 1;
+
+        IF @HostLabId IS NOT NULL
+        BEGIN
+            SELECT @HostOwner = OwnerUserId FROM lab.FilmLabs WHERE LabId = @HostLabId AND IsDeleted = 0;
+            IF @HostOwner IS NULL
+                THROW 50705, N'Lab đăng cai không tồn tại.', 1;
+            IF @HostOwner <> @OrganizerId AND @IsAdmin = 0
+                THROW 50703, N'Chỉ chủ lab được dùng lab làm nơi đăng cai.', 1;
+        END;
+
+        IF @EventId IS NOT NULL
+        BEGIN
+            SET @Registered = (SELECT COUNT(*) FROM com.EventRegistrations
+                               WHERE EventId = @EventId AND Status IN (N'Registered', N'Attended'));
+            IF @Capacity < @Registered
+                THROW 50705, N'Sức chứa không được nhỏ hơn số người đã đăng ký.', 1;
+        END;
+
+        DECLARE @pt geography = CASE WHEN @Latitude IS NOT NULL THEN geography::Point(@Latitude, @Longitude, 4326) END;
+
+        IF @EventId IS NULL
+        BEGIN
+            INSERT INTO com.Events (OrganizerId, HostLabId, EventType, Title, Description, StartAt, EndAt,
+                                    RegistrationDeadline, VenueName, AddressLine, City, Location, Capacity, Fee, Status)
+            VALUES (@OrganizerId, @HostLabId, @EventType, @Title, @Description, @StartAt, @EndAt,
+                    @RegistrationDeadline, @VenueName, @AddressLine, @City, @pt, @Capacity, @Fee, @Status);
+            SET @NewEventId = SCOPE_IDENTITY();
+        END
+        ELSE
+        BEGIN
+            UPDATE com.Events
+            SET HostLabId = @HostLabId, EventType = @EventType, Title = @Title, Description = @Description,
+                StartAt = @StartAt, EndAt = @EndAt, RegistrationDeadline = @RegistrationDeadline,
+                VenueName = @VenueName, AddressLine = @AddressLine, City = @City, Location = @pt,
+                Capacity = @Capacity, Fee = @Fee, Status = @Status, UpdatedAt = SYSUTCDATETIME()
+            WHERE EventId = @EventId;
+            SET @NewEventId = @EventId;
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO

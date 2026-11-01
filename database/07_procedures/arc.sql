@@ -271,3 +271,122 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE arc.sp_SaveAlbum
+    @OwnerUserId     INT,
+    @Title           NVARCHAR(150),
+    @AlbumId         INT              = NULL,   -- NULL: tạo album mới
+    @Description     NVARCHAR(500)    = NULL,
+    @IsPublic        BIT              = 0,
+    @CoverScanFileId UNIQUEIDENTIFIER = NULL,
+    @IsDeleted       BIT              = 0,
+    @NewAlbumId      INT              = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OwnerUserId;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @OwnerUserId AND IsActive = 1 AND IsDeleted = 0)
+            THROW 50501, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+        BEGIN TRAN;
+
+        DECLARE @CurOwner INT;
+        IF @AlbumId IS NOT NULL
+        BEGIN
+            SELECT @CurOwner = OwnerUserId
+            FROM arc.Albums WITH (UPDLOCK, HOLDLOCK)
+            WHERE AlbumId = @AlbumId AND IsDeleted = 0;
+            IF @CurOwner IS NULL
+                THROW 50501, N'Album không tồn tại.', 1;
+            IF @CurOwner <> @OwnerUserId
+                THROW 50503, N'Album không thuộc về bạn.', 1;
+        END;
+
+        SET @Title = LTRIM(RTRIM(@Title));
+        IF NULLIF(@Title, N'') IS NULL
+            THROW 50505, N'Tên album không được rỗng.', 1;
+        IF @IsPublic IS NULL OR @IsDeleted IS NULL
+            THROW 50505, N'IsPublic và IsDeleted không được NULL.', 1;
+        IF @CoverScanFileId IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM arc.ScanFiles WHERE ScanFileId = @CoverScanFileId AND OwnerUserId = @OwnerUserId)
+            THROW 50505, N'Ảnh bìa phải là ảnh của bạn.', 1;
+
+        IF @AlbumId IS NULL
+        BEGIN
+            INSERT INTO arc.Albums (OwnerUserId, Title, Description, CoverScanFileId, IsPublic, IsDeleted)
+            VALUES (@OwnerUserId, @Title, @Description, @CoverScanFileId, @IsPublic, @IsDeleted);
+            SET @NewAlbumId = SCOPE_IDENTITY();
+        END
+        ELSE
+        BEGIN
+            UPDATE arc.Albums
+            SET Title = @Title, Description = @Description, CoverScanFileId = @CoverScanFileId,
+                IsPublic = @IsPublic, IsDeleted = @IsDeleted, UpdatedAt = SYSUTCDATETIME()
+            WHERE AlbumId = @AlbumId;
+            SET @NewAlbumId = @AlbumId;
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE arc.sp_SetAlbumPhoto
+    @OwnerUserId INT,
+    @AlbumId     INT,
+    @ScanFileId  UNIQUEIDENTIFIER,
+    @Action      NVARCHAR(6),        -- 'Add' | 'Remove'
+    @SortOrder   SMALLINT = 0
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OwnerUserId;
+
+        BEGIN TRAN;
+
+        DECLARE @CurOwner INT;
+        SELECT @CurOwner = OwnerUserId
+        FROM arc.Albums WITH (UPDLOCK, HOLDLOCK)
+        WHERE AlbumId = @AlbumId AND IsDeleted = 0;
+        IF @CurOwner IS NULL
+            THROW 50501, N'Album không tồn tại.', 1;
+        IF @CurOwner <> @OwnerUserId
+            THROW 50503, N'Album không thuộc về bạn.', 1;
+        IF @Action IS NULL OR @Action NOT IN (N'Add', N'Remove')
+            THROW 50505, N'Action phải là Add hoặc Remove.', 1;
+        IF NOT EXISTS (SELECT 1 FROM arc.ScanFiles WHERE ScanFileId = @ScanFileId AND OwnerUserId = @OwnerUserId)
+            THROW 50503, N'Ảnh không tồn tại hoặc không thuộc về bạn.', 1;
+
+        IF @Action = N'Add'
+        BEGIN
+            IF EXISTS (SELECT 1 FROM arc.AlbumPhotos WHERE AlbumId = @AlbumId AND ScanFileId = @ScanFileId)
+                UPDATE arc.AlbumPhotos SET SortOrder = ISNULL(@SortOrder, 0)
+                WHERE AlbumId = @AlbumId AND ScanFileId = @ScanFileId;
+            ELSE
+                INSERT INTO arc.AlbumPhotos (AlbumId, ScanFileId, SortOrder)
+                VALUES (@AlbumId, @ScanFileId, ISNULL(@SortOrder, 0));
+        END
+        ELSE
+        BEGIN
+            DELETE FROM arc.AlbumPhotos WHERE AlbumId = @AlbumId AND ScanFileId = @ScanFileId;
+            UPDATE arc.Albums SET CoverScanFileId = NULL, UpdatedAt = SYSUTCDATETIME()
+            WHERE AlbumId = @AlbumId AND CoverScanFileId = @ScanFileId;
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO

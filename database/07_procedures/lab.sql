@@ -161,3 +161,185 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE lab.sp_SaveLabProfile
+    @OwnerUserId        INT,
+    @LabName            NVARCHAR(150),
+    @AddressLine        NVARCHAR(255),
+    @Ward               NVARCHAR(100),
+    @District           NVARCHAR(100),
+    @City               NVARCHAR(100),
+    @LabId              INT            = NULL,   -- NULL: tạo lab mới (ApprovalStatus = Pending)
+    @Description        NVARCHAR(1000) = NULL,
+    @Latitude           FLOAT          = NULL,
+    @Longitude          FLOAT          = NULL,
+    @Phone              NVARCHAR(20)   = NULL,
+    @Email              NVARCHAR(255)  = NULL,
+    @OpenHoursJson      NVARCHAR(MAX)  = NULL,
+    @SpecialTechniques  NVARCHAR(MAX)  = NULL,
+    @DailyCapacityRolls SMALLINT       = 50,
+    @NewLabId           INT            = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OwnerUserId;
+
+        BEGIN TRAN;
+
+        DECLARE @CurOwner INT;
+        IF @LabId IS NOT NULL
+        BEGIN
+            SELECT @CurOwner = OwnerUserId
+            FROM lab.FilmLabs WITH (UPDLOCK, HOLDLOCK)
+            WHERE LabId = @LabId AND IsDeleted = 0;
+            IF @CurOwner IS NULL
+                THROW 50201, N'Lab không tồn tại.', 1;
+        END;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.UserRoles ur
+                       JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                       JOIN iam.Users u ON u.UserId = ur.UserId
+                       WHERE ur.UserId = @OwnerUserId AND r.RoleCode = N'LabOwner' AND u.IsActive = 1 AND u.IsDeleted = 0)
+            THROW 50203, N'Chỉ người dùng có role LabOwner được quản lý hồ sơ lab.', 1;
+        IF @CurOwner IS NOT NULL AND @CurOwner <> @OwnerUserId
+            THROW 50203, N'Chỉ chủ lab được sửa hồ sơ lab.', 1;
+
+        SET @LabName = LTRIM(RTRIM(@LabName));
+        SET @AddressLine = LTRIM(RTRIM(@AddressLine));
+        SET @Ward = LTRIM(RTRIM(@Ward));
+        SET @District = LTRIM(RTRIM(@District));
+        SET @City = LTRIM(RTRIM(@City));
+        IF NULLIF(@LabName, N'') IS NULL OR NULLIF(@AddressLine, N'') IS NULL OR NULLIF(@Ward, N'') IS NULL
+           OR NULLIF(@District, N'') IS NULL OR NULLIF(@City, N'') IS NULL
+            THROW 50205, N'Tên lab, địa chỉ, phường, quận và thành phố không được rỗng.', 1;
+        IF @DailyCapacityRolls IS NULL OR @DailyCapacityRolls < 1
+            THROW 50205, N'DailyCapacityRolls phải lớn hơn 0.', 1;
+        IF (@Latitude IS NULL AND @Longitude IS NOT NULL) OR (@Latitude IS NOT NULL AND @Longitude IS NULL)
+            THROW 50205, N'Phải truyền đủ cả vĩ độ và kinh độ.', 1;
+        IF (@Latitude < -90 OR @Latitude > 90) OR (@Longitude < -180 OR @Longitude > 180)
+            THROW 50205, N'Vĩ độ hoặc kinh độ nằm ngoài phạm vi hợp lệ.', 1;
+        IF (@OpenHoursJson IS NOT NULL AND ISJSON(@OpenHoursJson) = 0)
+           OR (@SpecialTechniques IS NOT NULL AND ISJSON(@SpecialTechniques) = 0)
+            THROW 50205, N'OpenHoursJson và SpecialTechniques phải là JSON hợp lệ.', 1;
+
+        DECLARE @pt geography = CASE WHEN @Latitude IS NOT NULL THEN geography::Point(@Latitude, @Longitude, 4326) END;
+
+        IF @LabId IS NULL
+        BEGIN
+            INSERT INTO lab.FilmLabs (OwnerUserId, LabName, Description, AddressLine, Ward, District, City, Location,
+                                      Phone, Email, OpenHoursJson, SpecialTechniques, DailyCapacityRolls)
+            VALUES (@OwnerUserId, @LabName, @Description, @AddressLine, @Ward, @District, @City, @pt,
+                    @Phone, @Email, @OpenHoursJson, @SpecialTechniques, @DailyCapacityRolls);
+            SET @NewLabId = SCOPE_IDENTITY();
+        END
+        ELSE
+        BEGIN
+            -- Ghi đè toàn bộ trường hồ sơ; KHÔNG đụng ApprovalStatus, AvgRating, ReviewCount
+            UPDATE lab.FilmLabs
+            SET LabName = @LabName, Description = @Description, AddressLine = @AddressLine, Ward = @Ward,
+                District = @District, City = @City, Location = @pt, Phone = @Phone, Email = @Email,
+                OpenHoursJson = @OpenHoursJson, SpecialTechniques = @SpecialTechniques,
+                DailyCapacityRolls = @DailyCapacityRolls, UpdatedAt = SYSUTCDATETIME()
+            WHERE LabId = @LabId;
+            SET @NewLabId = @LabId;
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE lab.sp_SaveLabService
+    @OwnerUserId     INT,
+    @LabId           INT,
+    @ServiceTypeId   INT,
+    @FormatId        INT,
+    @PackageName     NVARCHAR(150),
+    @UnitPrice       DECIMAL(18,0),
+    @TurnaroundDays  TINYINT,
+    @LabServiceId    INT           = NULL,      -- NULL: thêm gói mới
+    @ProcessCode     NVARCHAR(10)  = N'ANY',
+    @Description     NVARCHAR(500) = NULL,
+    @PriceUnit       NVARCHAR(5)   = N'Roll',
+    @ScanQuality     NVARCHAR(5)   = NULL,      -- bắt buộc với gói Scan, để trống với gói khác
+    @IsActive        BIT           = 1,
+    @IsDeleted       BIT           = 0,
+    @NewLabServiceId INT           = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OwnerUserId;
+
+        BEGIN TRAN;
+
+        DECLARE @CurOwner INT;
+        SELECT @CurOwner = OwnerUserId
+        FROM lab.FilmLabs WITH (UPDLOCK, HOLDLOCK)
+        WHERE LabId = @LabId AND IsDeleted = 0;
+        IF @CurOwner IS NULL
+            THROW 50201, N'Lab không tồn tại.', 1;
+        IF @CurOwner <> @OwnerUserId
+            THROW 50203, N'Chỉ chủ lab được quản lý gói dịch vụ.', 1;
+        IF @LabServiceId IS NOT NULL
+           AND NOT EXISTS (SELECT 1 FROM lab.LabServices WITH (UPDLOCK, HOLDLOCK)
+                           WHERE LabServiceId = @LabServiceId AND LabId = @LabId AND IsDeleted = 0)
+            THROW 50201, N'Gói dịch vụ không tồn tại trong lab này.', 1;
+
+        SET @PackageName = LTRIM(RTRIM(@PackageName));
+        IF NULLIF(@PackageName, N'') IS NULL
+            THROW 50205, N'Tên gói không được rỗng.', 1;
+        IF @UnitPrice IS NULL OR @UnitPrice < 0
+            THROW 50205, N'Giá phải từ 0 trở lên.', 1;
+        IF @TurnaroundDays IS NULL OR @TurnaroundDays NOT BETWEEN 1 AND 60
+            THROW 50205, N'Thời gian xử lý phải từ 1 đến 60 ngày.', 1;
+        IF @ProcessCode IS NULL OR @ProcessCode NOT IN (N'C-41', N'E-6', N'BW', N'ECN-2', N'ANY')
+            THROW 50205, N'ProcessCode không hợp lệ.', 1;
+        IF @PriceUnit IS NULL OR @PriceUnit NOT IN (N'Roll', N'Frame')
+            THROW 50205, N'PriceUnit phải là Roll hoặc Frame.', 1;
+        IF @ScanQuality IS NOT NULL AND @ScanQuality NOT IN (N'Basic', N'High', N'Ultra')
+            THROW 50205, N'ScanQuality phải là Basic, High hoặc Ultra.', 1;
+        IF @IsActive IS NULL OR @IsDeleted IS NULL
+            THROW 50205, N'IsActive và IsDeleted không được NULL.', 1;
+        IF NOT EXISTS (SELECT 1 FROM lab.ServiceTypes WHERE ServiceTypeId = @ServiceTypeId)
+            THROW 50205, N'Loại dịch vụ không tồn tại.', 1;
+        IF NOT EXISTS (SELECT 1 FROM lab.FilmFormats WHERE FormatId = @FormatId)
+            THROW 50205, N'Định dạng phim không tồn tại.', 1;
+        IF @IsDeleted = 1 SET @IsActive = 0;
+
+        IF @LabServiceId IS NULL
+        BEGIN
+            INSERT INTO lab.LabServices (LabId, ServiceTypeId, FormatId, ProcessCode, PackageName, Description,
+                                         UnitPrice, PriceUnit, ScanQuality, TurnaroundDays, IsActive, IsDeleted)
+            VALUES (@LabId, @ServiceTypeId, @FormatId, @ProcessCode, @PackageName, @Description,
+                    @UnitPrice, @PriceUnit, @ScanQuality, @TurnaroundDays, @IsActive, @IsDeleted);
+            SET @NewLabServiceId = SCOPE_IDENTITY();
+        END
+        ELSE
+        BEGIN
+            UPDATE lab.LabServices
+            SET ServiceTypeId = @ServiceTypeId, FormatId = @FormatId, ProcessCode = @ProcessCode,
+                PackageName = @PackageName, Description = @Description, UnitPrice = @UnitPrice,
+                PriceUnit = @PriceUnit, ScanQuality = @ScanQuality, TurnaroundDays = @TurnaroundDays,
+                IsActive = @IsActive, IsDeleted = @IsDeleted, UpdatedAt = SYSUTCDATETIME()
+            WHERE LabServiceId = @LabServiceId;
+            SET @NewLabServiceId = @LabServiceId;
+        END;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        IF ERROR_NUMBER() IN (2601, 2627)
+            THROW 50205, N'Tên gói đã tồn tại trong lab này.', 1;
+        THROW;
+    END CATCH
+END
+GO
