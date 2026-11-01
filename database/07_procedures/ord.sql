@@ -331,3 +331,60 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE ord.sp_SetFeeConfig
+    @AdminUserId   INT,
+    @FeeType       NVARCHAR(20),     -- PlatformCommission | MarketplaceFee | DeliveryBase
+    @EffectiveFrom DATE,
+    @Rate          DECIMAL(5,4)  = NULL,
+    @FixedAmount   DECIMAL(18,0) = NULL,
+    @EffectiveTo   DATE          = NULL,
+    @ScopeLabId    INT           = NULL,   -- NULL: toàn hệ thống
+    @NewFeeConfigId INT          = NULL OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @AdminUserId;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                       WHERE ur.UserId = @AdminUserId AND r.RoleCode = N'Admin')
+            THROW 50303, N'Chỉ Admin được cấu hình phí.', 1;
+        IF @FeeType IS NULL OR @FeeType NOT IN (N'PlatformCommission', N'MarketplaceFee', N'DeliveryBase')
+            THROW 50305, N'FeeType không hợp lệ.', 1;
+        IF @EffectiveFrom IS NULL
+            THROW 50305, N'EffectiveFrom không được rỗng.', 1;
+        IF @Rate IS NULL AND @FixedAmount IS NULL
+            THROW 50305, N'Phải có Rate hoặc FixedAmount.', 1;
+        IF @Rate < 0 OR @Rate > 1
+            THROW 50305, N'Rate phải từ 0 đến 1.', 1;
+        IF @FixedAmount < 0
+            THROW 50305, N'FixedAmount phải từ 0 trở lên.', 1;
+        IF @EffectiveTo IS NOT NULL AND @EffectiveTo < @EffectiveFrom
+            THROW 50305, N'EffectiveTo phải từ EffectiveFrom trở đi.', 1;
+        IF @ScopeLabId IS NOT NULL AND NOT EXISTS (SELECT 1 FROM lab.FilmLabs WHERE LabId = @ScopeLabId AND IsDeleted = 0)
+            THROW 50301, N'Lab trong phạm vi cấu hình không tồn tại.', 1;
+
+        BEGIN TRAN;
+
+        -- Đóng bản đang mở (EffectiveTo NULL) cùng loại và phạm vi, bắt đầu trước bản mới
+        UPDATE ord.FeeConfigs
+        SET EffectiveTo = DATEADD(DAY, -1, @EffectiveFrom)
+        WHERE FeeType = @FeeType
+          AND ISNULL(ScopeLabId, 0) = ISNULL(@ScopeLabId, 0)
+          AND EffectiveTo IS NULL
+          AND EffectiveFrom < @EffectiveFrom;
+
+        INSERT INTO ord.FeeConfigs (FeeType, Rate, FixedAmount, ScopeLabId, EffectiveFrom, EffectiveTo, CreatedBy)
+        VALUES (@FeeType, @Rate, @FixedAmount, @ScopeLabId, @EffectiveFrom, @EffectiveTo, @AdminUserId);
+        SET @NewFeeConfigId = SCOPE_IDENTITY();
+
+        COMMIT;   -- trigger ord.trg_FeeConfigs_NoOverlap ném 50304 nếu vẫn chồng hiệu lực
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO

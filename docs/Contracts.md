@@ -157,13 +157,16 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 
 ## 8. Danh mục đối tượng T-SQL (kế hoạch)
 
-★ = procedure bắt buộc. Tổng: **42 procedure** (16 bắt buộc, 26 mở rộng), **14 function**, **28 trigger**, **14 view**, **2 sequence**.
+★ = procedure bắt buộc. Tổng: **51 procedure** (16 bắt buộc, 35 mở rộng), **15 function**, **28 trigger**, **14 view**, **2 sequence**.
 
 ### `iam`: M1 Identity & Access (người phụ trách A)
 
 | Loại | Tên | Mục đích |
 |---|---|---|
 | Procedure ★ | `iam.sp_RegisterUser` | Đăng ký tài khoản, tự gán role Customer |
+| Procedure | `iam.sp_SaveAddress` | Khách thêm/sửa/xóa mềm địa chỉ nhận/giao phim |
+| Procedure | `iam.sp_SetUserStatus` | Admin khóa/mở tài khoản người dùng |
+| Procedure | `iam.sp_AssignRole` | Admin gán hoặc gỡ role cho người dùng |
 | Trigger | `iam.trg_Users_Audit` (trên `iam.Users`) | Ghi nhật ký thay đổi (loại PasswordHash) |
 
 ### `lab`: M2 Lab & Catalog (người phụ trách B)
@@ -173,6 +176,8 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure ★ | `lab.sp_ApproveLab` | Admin duyệt/từ chối/đình chỉ Film Lab |
 | Procedure ★ | `lab.sp_SearchLabs` | Tìm và so sánh lab theo vị trí, định dạng, giá, thời gian, rating |
 | Procedure | `lab.sp_RecalcLabRating` | Tính lại AvgRating/ReviewCount của lab (được trigger Reviews gọi) |
+| Procedure | `lab.sp_SaveLabProfile` | Chủ lab tạo/sửa hồ sơ lab (lab mới ở trạng thái Pending) |
+| Procedure | `lab.sp_SaveLabService` | Chủ lab tạo/sửa/ẩn/xóa mềm gói dịch vụ và giá |
 | Function | `lab.fn_LabCapacityLeft` | Số cuộn còn nhận được trong ngày của lab |
 | Function | `lab.fn_DistanceKm` | Khoảng cách km giữa hai điểm geography |
 | Trigger | `lab.trg_LabServices_CheckScan` (trên `lab.LabServices`) | Gói Scan phải có ScanQuality, gói khác phải NULL |
@@ -187,6 +192,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure ★ | `ord.sp_UpdateOrderStage` | Đổi giai đoạn xử lý đơn (kiểm tra thứ tự hợp lệ) |
 | Procedure ★ | `ord.sp_CancelOrder` | Hủy đơn, hủy chặng giao, hoàn tiền nếu đã thanh toán |
 | Procedure ★ | `ord.sp_ProcessPayment` | Ghi nhận thanh toán online của đơn |
+| Procedure | `ord.sp_SetFeeConfig` | Admin cấu hình phí nền tảng, Marketplace, giao hàng |
 | Function | `ord.fn_CalcOrderTotal` | Tính Subtotal, Total của đơn |
 | Function | `ord.fn_CalcPlatformFee` | Tính hoa hồng nền tảng hiệu lực |
 | Function | `ord.fn_NextStage` | Giai đoạn kế tiếp áp dụng cho đơn |
@@ -211,6 +217,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `ord.sp_ReplyReview` | Lab trả lời đánh giá (1 lần) |
 | Procedure | `ord.sp_ModerateReview` | Admin ẩn/hiện đánh giá |
 | Function | `ord.fn_LabAvgRating` | Điểm trung bình lab từ review hiển thị |
+| Function | `ord.fn_IsValidComplaintTransition` | Kiểm tra chuyển trạng thái khiếu nại |
 | Trigger | `ord.trg_Reviews_CheckEligible` (trên `ord.Reviews`) | Chỉ đơn Completed, trong 30 ngày |
 | Trigger | `ord.trg_Reviews_UpdateRating` (trên `ord.Reviews`) | Gọi lab.sp_RecalcLabRating |
 | Trigger | `ord.trg_Complaints_Guard` (trên `ord.Complaints`) | Chuyển trạng thái khiếu nại hợp lệ |
@@ -239,6 +246,8 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `arc.sp_SetScanQuality` | Model AI ghi điểm chất lượng scan |
 | Procedure | `arc.sp_CreateNotification` | Điểm tạo thông báo duy nhất cho mọi module |
 | Procedure | `arc.sp_MarkNotificationRead` | Đánh dấu đã đọc thông báo |
+| Procedure | `arc.sp_SaveAlbum` | Khách tạo/sửa/xóa mềm album trong Digital Film Archive |
+| Procedure | `arc.sp_SetAlbumPhoto` | Khách thêm/gỡ ảnh khỏi album |
 | Function | `arc.fn_GetPhotoMetadata` | Table-valued: đọc ExtraJson bằng OPENJSON |
 | Trigger | `arc.trg_ScanFiles_Notify` (trên `arc.ScanFiles`) | Thông báo ScanReady lần upload đầu của đơn |
 | Trigger | `arc.trg_ScanFiles_CheckOwner` (trên `arc.ScanFiles`) | OwnerUserId = Orders.CustomerId |
@@ -280,6 +289,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `com.sp_AddComment` | Thêm bình luận (1 cấp trả lời) |
 | Procedure | `com.sp_AcceptAnswer` | Chọn câu trả lời cho bài Question |
 | Procedure | `com.sp_CancelEventRegistration` | Hủy đăng ký, đẩy người hàng chờ lên |
+| Procedure | `com.sp_SaveEvent` | Expert/Chủ lab tạo và sửa workshop, photowalk |
 | Function | `com.fn_EventSeatsLeft` | Số chỗ còn lại của sự kiện |
 | Trigger | `com.trg_Articles_CheckAuthorRole` (trên `com.Articles`) | Loại bài vs role tác giả |
 | Trigger | `com.trg_ArticleComments_CheckLevel` (trên `com.ArticleComments`) | Chỉ 1 cấp trả lời |
@@ -335,3 +345,4 @@ Danh sách đầy đủ 77 FK (kèm bảng cha/cột, bản số, tầng tạo) 
 | 1.5 | Đợt 6 | Nhóm | Nhóm 7b AI (lỗi dải 508xx: 01 notfound, 02 sai trạng thái, 03 không quyền, 05 dữ liệu sai). ai.fn_LabScores(@UserId,@Latitude,@Longitude) inline TVF, cột: LabId, LabName, AvgRating, ReviewCount, DistanceKm, MinPrice, MinTurnaroundDays, RatingScore, DistanceScore, PriceScore, SpeedScore, HistoryScore, Score. Score = 0.35 Rating + 0.25 Distance + 0.20 Price + 0.10 Speed + 0.10 History. Rating = (n*AvgRating + 5*C)/(n+5) rồi chia 5 (C là trung bình toàn hệ thống, mặc định 3.0). Distance = 1 - km/MaxDist (MaxDist = MaxDistanceKm của user, mặc định 30; không xác định gốc thì 0.5; dùng lab.fn_DistanceKm). Price, Speed: min-max trên lab ứng viên; giá chỉ xét PreferredFormatId nếu có; vượt MaxBudgetPerRoll thì điểm giá 0. History: đơn Completed (StageId=12) tại lab: 0 đơn là 0, 1 đơn là 0.5, từ 2 đơn là 1; user từng đánh giá lab <=2 sao thì 0. PrioritizeQuality/PrioritizeSpeed chỉ lưu, chưa dùng. sp_GetLabRecommendations(@UserId,@TopN=5,@Latitude=NULL,@Longitude=NULL): @TopN 1-20 (50805); phải truyền đủ cặp tọa độ (50805); user không tồn tại 50801; ghi ai.RecommendationLogs với ModelVersion='tsql-v1'; trả LabId, LabName, [Rank], Score, AvgRating, DistanceKm. sp_SaveUserPreferences(@UserId,@PreferredFormatId,@PreferredFilmType,@PreferredCity,@MaxDistanceKm,@MaxBudgetPerRoll,@PrioritizeQuality=0,@PrioritizeSpeed=0,@Source='UserSet',@ExtraJson): upsert, ghi đè toàn bộ. sp_LogChatMessage(@UserId,@SessionId,@Role,@Message,@ModelName,@PromptTokens,@CompletionTokens,@LatencyMs,@SourcesJson,@NewChatLogId OUT): Assistant bắt buộc ModelName (50805). sp_RecordRecommendationAction(@RecLogId,@UserId,@Action 'Clicked'/'Ordered'/'Dismissed'): log của người khác 50803; Ordered là trạng thái cuối (50802). sp_ApproveKnowledgeDoc(@KnowledgeDocId,@AdminUserId,@Approve=1): 0 là bỏ duyệt; không đổi trạng thái 50802. sp_PurgeOldLogs(@ActorUserId=NULL,@RetentionDays=180,@DeletedCount OUT): NULL là job hệ thống, có giá trị thì phải Admin (50803); RetentionDays<1 là 50805. trg_KnowledgeDocs_Guard: chỉ Expert đóng góp, chỉ Admin duyệt (50803). vw_RecommendationMetrics cột: ModelVersion, RecommendationType, Impressions, Clicked, Ordered, Dismissed, CtrRate, OrderRate, AvgScore, FirstAt, LastAt | ai |
 | 1.6 | Đợt 6 | Nhóm | Nhóm 8 Feedback và Audit (lỗi dải 503xx). ord.fn_LabAvgRating(@LabId) DECIMAL(3,2): trung bình RatingOverall của review IsVisible=1 và IsDeleted=0, NULL nếu chưa có. ord.sp_ReplyReview(@ReviewId,@LabOwnerId,@Reply): chỉ chủ lab của review; thứ tự lỗi 50301, 50303, 50305 (Reply rỗng), 50302 (review đang ẩn), 50304 (đã trả lời); thông báo Review cho khách. ord.sp_ModerateReview(@ReviewId,@AdminUserId,@Action 'Hide'/'Show',@Reason=NULL): thứ tự lỗi 50301, 50303, 50305 (Action sai hoặc Hide thiếu Reason), 50302 (không đổi trạng thái); gọi lab.sp_RecalcLabRating, thông báo cho khách. ord.trg_FeeConfigs_NoOverlap: chồng khoảng hiệu lực cùng (FeeType, ScopeLabId; NULL là một phạm vi) là 50304. ord.trg_Payments_Audit và iam.trg_Users_Audit: chỉ ghi UPDATE khi cột nghiệp vụ đổi; Users không ghi PasswordHash, chỉ cờ PasswordChanged ở NewValues, đổi LastLoginAt không ghi. View: ord.vw_LabRevenue (doanh thu chỉ tính đơn Completed và Paid), ord.vw_OrdersInProgress (StageId 2-11), ord.vw_LabReviews (gồm review ẩn), ord.vw_OpenComplaints (Open/InReview), dlv.vw_DeliveryBoard (chặng Requested/Assigned/PickedUp), audit.vw_RecentChanges (30 ngày), audit.vw_AdminDashboard (1 dòng tổng hợp); cột xem file 06_views | ord, iam, dlv, audit |
 | 1.7 | Đợt 6 | Nhóm | Chốt Đợt 6: 42 procedure, 15 function, 14 view, 28 trigger, 2 sequence (khớp mục 8 cộng ord.fn_IsValidComplaintTransition); 41 bảng, 77 FK; tests/02-16 đạt 355 PASS (15_inventory_check đối chiếu danh mục, 16_integration_test chạy xuyên module) | Toàn bộ |
+| 1.8 | Đợt 8 | Nhóm | Bổ sung 9 procedure quản trị cho web (tổng 51 procedure, 15 function). Thứ tự lỗi: không tồn tại, quyền, trạng thái, dữ liệu. iam.sp_SaveAddress(@UserId,@RecipientName,@Phone,@Line1,@Ward,@District,@City,@AddressId=NULL,@Label=NULL,@Latitude=NULL,@Longitude=NULL,@IsDefault=0,@IsDeleted=0,@NewAddressId OUT): 50101 user/địa chỉ không tồn tại, 50103 địa chỉ của người khác, 50105 dữ liệu sai; địa chỉ đầu tiên tự là mặc định. iam.sp_SetUserStatus(@AdminUserId,@UserId,@IsActive): 50101, 50102 trạng thái không đổi, 50103 không phải Admin, 50105 tự khóa mình. iam.sp_AssignRole(@AdminUserId,@UserId,@RoleCode,@Action 'Add'/'Remove'): 50101, 50102 đã có/chưa có role, 50103, 50105 (RoleCode/Action sai, gỡ role cuối, Admin tự gỡ Admin). lab.sp_SaveLabProfile(@OwnerUserId,@LabName,@AddressLine,@Ward,@District,@City,@LabId=NULL,@Description=NULL,@Latitude=NULL,@Longitude=NULL,@Phone=NULL,@Email=NULL,@OpenHoursJson=NULL,@SpecialTechniques=NULL,@DailyCapacityRolls=50,@NewLabId OUT): lab mới luôn Pending, sửa không đổi ApprovalStatus; 50201, 50203 (không phải LabOwner hoặc không phải chủ lab), 50205. lab.sp_SaveLabService(@OwnerUserId,@LabId,@ServiceTypeId,@FormatId,@PackageName,@UnitPrice,@TurnaroundDays,@LabServiceId=NULL,@ProcessCode='ANY',@Description=NULL,@PriceUnit='Roll',@ScanQuality=NULL,@IsActive=1,@IsDeleted=0,@NewLabServiceId OUT): 50201, 50203, 50205 (kể cả trùng tên gói). ord.sp_SetFeeConfig(@AdminUserId,@FeeType,@EffectiveFrom,@Rate=NULL,@FixedAmount=NULL,@EffectiveTo=NULL,@ScopeLabId=NULL,@NewFeeConfigId OUT): tự đóng bản đang mở cùng loại và phạm vi (EffectiveTo = EffectiveFrom - 1); 50301, 50303, 50304 chồng hiệu lực, 50305. arc.sp_SaveAlbum(@OwnerUserId,@Title,@AlbumId=NULL,@Description=NULL,@IsPublic=0,@CoverScanFileId=NULL,@IsDeleted=0,@NewAlbumId OUT): 50501, 50503, 50505. arc.sp_SetAlbumPhoto(@OwnerUserId,@AlbumId,@ScanFileId,@Action 'Add'/'Remove',@SortOrder=0): idempotent; 50501, 50503, 50505. com.sp_SaveEvent(@OrganizerId,@EventType,@Title,@VenueName,@AddressLine,@City,@StartAt,@EndAt,@Capacity,@EventId=NULL,@Description=NULL,@RegistrationDeadline=NULL,@Latitude=NULL,@Longitude=NULL,@Fee=0,@HostLabId=NULL,@Status='Draft',@NewEventId OUT): Status chỉ Draft/Open/Closed, không đưa sự kiện đã công bố về Draft; 50701, 50702, 50703 (Expert/LabOwner/Admin, chủ sự kiện), 50705. Role: Customer + SaveAddress/SaveAlbum/SetAlbumPhoto; LabOwner + SaveLabProfile/SaveLabService/SaveEvent; Expert + SaveEvent; Admin có sẵn theo schema | iam, lab, ord, arc, com |

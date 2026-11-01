@@ -59,6 +59,15 @@ PROCS = [
  ("ai","sp_ApproveKnowledgeDoc",False,"Admin duyệt chunk tri thức"),
  ("ai","sp_PurgeOldLogs",False,"Dọn log chat quá 180 ngày"),
  ("audit","sp_WriteAudit",False,"Điểm ghi nhật ký duy nhất cho mọi trigger audit"),
+ ("iam","sp_SaveAddress",False,"Khách thêm/sửa/xóa mềm địa chỉ nhận/giao phim"),
+ ("iam","sp_SetUserStatus",False,"Admin khóa/mở tài khoản người dùng"),
+ ("iam","sp_AssignRole",False,"Admin gán hoặc gỡ role cho người dùng"),
+ ("lab","sp_SaveLabProfile",False,"Chủ lab tạo/sửa hồ sơ lab (lab mới ở trạng thái Pending)"),
+ ("lab","sp_SaveLabService",False,"Chủ lab tạo/sửa/ẩn/xóa mềm gói dịch vụ và giá"),
+ ("ord","sp_SetFeeConfig",False,"Admin cấu hình phí nền tảng, Marketplace, giao hàng"),
+ ("arc","sp_SaveAlbum",False,"Khách tạo/sửa/xóa mềm album trong Digital Film Archive"),
+ ("arc","sp_SetAlbumPhoto",False,"Khách thêm/gỡ ảnh khỏi album"),
+ ("com","sp_SaveEvent",False,"Expert/Chủ lab tạo và sửa workshop, photowalk"),
 ]
 
 # (unit, tên, mục đích)
@@ -77,6 +86,7 @@ FUNCS = [
  ("mkt","fn_SellerRating","Điểm trung bình người bán"),
  ("com","fn_EventSeatsLeft","Số chỗ còn lại của sự kiện"),
  ("ai","fn_LabScores","Inline table-valued: điểm gợi ý lab"),
+ ("ord_feedback","fn_IsValidComplaintTransition","Kiểm tra chuyển trạng thái khiếu nại"),
 ]
 
 # (unit, tên, bảng, mục đích)

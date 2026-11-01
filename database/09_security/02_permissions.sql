@@ -37,6 +37,9 @@ GRANT EXECUTE ON ai.sp_GetLabRecommendations     TO role_Customer;
 GRANT EXECUTE ON ai.sp_SaveUserPreferences       TO role_Customer;
 GRANT EXECUTE ON ai.sp_LogChatMessage            TO role_Customer;
 GRANT EXECUTE ON ai.sp_RecordRecommendationAction TO role_Customer;
+GRANT EXECUTE ON iam.sp_SaveAddress              TO role_Customer;
+GRANT EXECUTE ON arc.sp_SaveAlbum                TO role_Customer;
+GRANT EXECUTE ON arc.sp_SetAlbumPhoto            TO role_Customer;
 
 -- ===== 2. GRANT EXECUTE: role_LabOwner =====
 GRANT EXECUTE ON lab.sp_SearchLabs               TO role_LabOwner;
@@ -49,6 +52,9 @@ GRANT EXECUTE ON com.sp_AddComment               TO role_LabOwner;
 GRANT EXECUTE ON com.sp_RegisterEvent            TO role_LabOwner;
 GRANT EXECUTE ON com.sp_CancelEventRegistration  TO role_LabOwner;
 GRANT EXECUTE ON ai.sp_LogChatMessage            TO role_LabOwner;
+GRANT EXECUTE ON lab.sp_SaveLabProfile           TO role_LabOwner;
+GRANT EXECUTE ON lab.sp_SaveLabService           TO role_LabOwner;
+GRANT EXECUTE ON com.sp_SaveEvent                TO role_LabOwner;
 
 -- ===== 3. GRANT EXECUTE: role_Expert =====
 GRANT EXECUTE ON lab.sp_SearchLabs               TO role_Expert;
@@ -60,6 +66,7 @@ GRANT EXECUTE ON com.sp_AcceptAnswer             TO role_Expert;
 GRANT EXECUTE ON com.sp_RegisterEvent            TO role_Expert;
 GRANT EXECUTE ON com.sp_CancelEventRegistration  TO role_Expert;
 GRANT EXECUTE ON ai.sp_LogChatMessage            TO role_Expert;
+GRANT EXECUTE ON com.sp_SaveEvent                TO role_Expert;
 
 -- ===== 4. GRANT EXECUTE: role_Delivery =====
 GRANT EXECUTE ON dlv.sp_UpdateDeliveryStatus     TO role_Delivery;
