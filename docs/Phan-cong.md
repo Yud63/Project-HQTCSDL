@@ -8,12 +8,12 @@
 
 | Thành viên | Họ tên | Module sở hữu | Bảng | Business rule | Procedure ★ / mở rộng | Function | Trigger | View |
 |---|---|---|---|---|---|---|---|---|
-| **A** | ____ | `iam`, `audit`, `dlv` | 9 | 28 | 2 / 6 | 1 | 3 | 3 |
-| **B** | ____ | `ord`, `lab` | 12 | 25 | 6 / 4 | 7 | 7 | 3 |
+| **A** | ____ | `iam`, `audit`, `dlv` | 9 | 28 | 2 / 8 | 1 | 3 | 3 |
+| **B** | ____ | `ord`, `lab` | 12 | 25 | 6 / 8 | 7 | 7 | 3 |
 | **C** | ____ | `ord_feedback`, `arc` | 7 | 26 | 4 / 7 | 3 | 8 | 3 |
 | **D** | ____ | `mkt`, `com` | 9 | 26 | 3 / 13 | 3 | 9 | 4 |
 | **E** | ____ | `ai` | 4 | 9 | 1 / 5 | 1 | 1 | 1 |
-| **Tổng** | | | 41 | 114 | 16 / 35 | 15 | 28 | 14 |
+| **Tổng** | | | 41 | 114 | 16 / 41 | 15 | 28 | 14 |
 
 ## 2. Công việc chung (ngoài module)
 
@@ -22,9 +22,9 @@
 | A | Quản lý repo, CI, merge, giữ Contracts/Conventions | 8 |
 | A | Bảo mật: role, GRANT/DENY, RLS, Masking (09_security) | 15 |
 | A | Backup/Restore + kịch bản phục hồi (10_backup) | 5 |
-| B | Rà soát index, so sánh Execution Plan trước/sau | 8 |
 | C | Kiểm thử tích hợp end-to-end (tests/) | 10 |
 | C | Kịch bản demo.sql | 8 |
+| D | Rà soát index, so sánh Execution Plan trước/sau | 8 |
 | E | Web demo (8-12 màn hình gọi sp_/vw_) | 45 |
 | E | Slide thuyết trình | 8 |
 | Cả nhóm | Viết báo cáo: mỗi người viết phần module của mình | 5 mỗi người |
@@ -35,20 +35,20 @@
 
 | Thành viên | Điểm module | Việc chung | Báo cáo | **Tổng** | So với trung bình |
 |---|---|---|---|---|---|
-| A | 55.5 | 28.0 | 5.0 | **88.5** | +0% |
-| B | 81.0 | 8.0 | 5.0 | **94.0** | +6% |
-| C | 67.5 | 18.0 | 5.0 | **90.5** | +2% |
-| D | 80.0 | 0.0 | 5.0 | **85.0** | -4% |
-| E | 26.5 | 53.0 | 5.0 | **84.5** | -5% |
-| Trung bình | | | | 88.5 | |
+| A | 58.5 | 28.0 | 5.0 | **91.5** | +1% |
+| B | 87.0 | 0.0 | 5.0 | **92.0** | +2% |
+| C | 67.5 | 18.0 | 5.0 | **90.5** | +0% |
+| D | 80.0 | 8.0 | 5.0 | **93.0** | +3% |
+| E | 26.5 | 53.0 | 5.0 | **84.5** | -6% |
+| Trung bình | | | | 90.3 | |
 
 ### Điểm công sức từng module
 
 | Module | Người | Bảng | BR | ★ | Mở rộng | Fn | Trg | View | **Điểm** |
 |---|---|---|---|---|---|---|---|---|---|
-| `iam` | A | 6 | 10 | 1 | 3 | 0 | 1 | 0 | 26.0 |
-| `lab` | B | 6 | 10 | 2 | 3 | 2 | 2 | 1 | 33.5 |
-| `ord` | B | 6 | 15 | 4 | 1 | 5 | 5 | 2 | 47.5 |
+| `iam` | A | 6 | 10 | 1 | 5 | 0 | 1 | 0 | 29.0 |
+| `lab` | B | 6 | 10 | 2 | 5 | 2 | 2 | 1 | 36.5 |
+| `ord` | B | 6 | 15 | 4 | 3 | 5 | 5 | 2 | 50.5 |
 | `ord_feedback` | C | 2 | 14 | 3 | 2 | 2 | 5 | 2 | 34.5 |
 | `dlv` | A | 2 | 12 | 1 | 2 | 1 | 2 | 1 | 21.0 |
 | `arc` | C | 5 | 12 | 1 | 5 | 1 | 3 | 1 | 33.0 |

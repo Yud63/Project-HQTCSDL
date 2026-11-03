@@ -343,3 +343,75 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE lab.sp_GetLabDetail
+    @LabId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM lab.FilmLabs WHERE LabId = @LabId AND ApprovalStatus = N'Approved' AND IsDeleted = 0)
+            THROW 50201, N'Lab không tồn tại hoặc chưa được duyệt.', 1;
+
+        -- Result set 1: thông tin lab
+        SELECT l.LabId, l.LabName, l.Description, l.AddressLine, l.Ward, l.District, l.City,
+               l.Location.Lat AS Latitude, l.Location.Long AS Longitude,
+               l.Phone, l.Email, l.OpenHoursJson, l.SpecialTechniques, l.DailyCapacityRolls,
+               l.AvgRating, l.ReviewCount
+        FROM lab.FilmLabs l
+        WHERE l.LabId = @LabId;
+
+        -- Result set 2: gói dịch vụ đang bán
+        SELECT ls.LabServiceId, ls.ServiceTypeId, st.ServiceCode, st.ServiceName, st.Category,
+               ls.FormatId, ff.FormatCode, ff.FormatName, ls.ProcessCode, ls.PackageName, ls.Description,
+               ls.UnitPrice, ls.PriceUnit, ls.ScanQuality, ls.TurnaroundDays
+        FROM lab.LabServices ls
+        JOIN lab.ServiceTypes st ON st.ServiceTypeId = ls.ServiceTypeId
+        JOIN lab.FilmFormats  ff ON ff.FormatId = ls.FormatId
+        WHERE ls.LabId = @LabId AND ls.IsActive = 1 AND ls.IsDeleted = 0
+        ORDER BY st.Category, ls.PackageName;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE lab.sp_GetMyLabs
+    @OwnerUserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        -- Result set 1: lab của chủ, mọi trạng thái duyệt, kèm quyết định gần nhất (lý do từ chối/đình chỉ)
+        SELECT l.LabId, l.LabName, l.Description, l.AddressLine, l.Ward, l.District, l.City,
+               l.Location.Lat AS Latitude, l.Location.Long AS Longitude,
+               l.Phone, l.Email, l.OpenHoursJson, l.SpecialTechniques, l.DailyCapacityRolls,
+               l.ApprovalStatus, l.AvgRating, l.ReviewCount,
+               a.Decision AS LastDecision, a.Reason AS LastDecisionReason, a.DecidedAt AS LastDecidedAt
+        FROM lab.FilmLabs l
+        OUTER APPLY (SELECT TOP 1 x.Decision, x.Reason, x.DecidedAt
+                     FROM lab.LabApprovals x
+                     WHERE x.LabId = l.LabId
+                     ORDER BY x.DecidedAt DESC, x.ApprovalId DESC) a
+        WHERE l.OwnerUserId = @OwnerUserId AND l.IsDeleted = 0
+        ORDER BY l.LabId;
+
+        -- Result set 2: gói dịch vụ của các lab đó, kể cả gói đang ẩn
+        SELECT ls.LabId, ls.LabServiceId, ls.ServiceTypeId, st.ServiceCode, st.ServiceName, st.Category,
+               ls.FormatId, ff.FormatCode, ff.FormatName, ls.ProcessCode, ls.PackageName, ls.Description,
+               ls.UnitPrice, ls.PriceUnit, ls.ScanQuality, ls.TurnaroundDays, ls.IsActive
+        FROM lab.LabServices ls
+        JOIN lab.FilmLabs     l  ON l.LabId = ls.LabId
+        JOIN lab.ServiceTypes st ON st.ServiceTypeId = ls.ServiceTypeId
+        JOIN lab.FilmFormats  ff ON ff.FormatId = ls.FormatId
+        WHERE l.OwnerUserId = @OwnerUserId AND l.IsDeleted = 0 AND ls.IsDeleted = 0
+        ORDER BY ls.LabId, st.Category, ls.PackageName;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO

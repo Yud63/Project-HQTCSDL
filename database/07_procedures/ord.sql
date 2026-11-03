@@ -388,3 +388,119 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE ord.sp_GetMyOrders
+    @UserId    INT,
+    @AsRole    NVARCHAR(8)  = N'Customer',   -- Customer: đơn mình đặt | LabOwner: đơn của các lab mình sở hữu
+    @StageCode NVARCHAR(20) = NULL,
+    @PageNo    INT          = 1,
+    @PageSize  INT          = 20
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+        IF @AsRole IS NULL OR @AsRole NOT IN (N'Customer', N'LabOwner')
+            THROW 50305, N'AsRole phải là Customer hoặc LabOwner.', 1;
+        IF @PageNo IS NULL OR @PageNo < 1 OR @PageSize IS NULL OR @PageSize NOT BETWEEN 1 AND 100
+            THROW 50305, N'PageNo phải từ 1, PageSize phải từ 1 đến 100.', 1;
+        IF @StageCode IS NOT NULL AND NOT EXISTS (SELECT 1 FROM ord.ProcessingStages WHERE StageCode = @StageCode)
+            THROW 50305, N'StageCode không tồn tại.', 1;
+
+        SELECT o.OrderId, o.OrderCode, o.CustomerId, u.FullName AS CustomerName,
+               o.LabId, l.LabName, o.StageId, s.StageCode, s.StageName,
+               o.PaymentStatus, o.TotalAmount, o.FulfillmentMethod, o.ReturnMethod,
+               o.EstimatedReadyDate, o.CreatedAt,
+               COUNT(*) OVER () AS TotalRows
+        FROM ord.Orders o
+        JOIN lab.FilmLabs         l ON l.LabId = o.LabId
+        JOIN iam.Users            u ON u.UserId = o.CustomerId
+        JOIN ord.ProcessingStages s ON s.StageId = o.StageId
+        WHERE o.IsDeleted = 0
+          AND (@StageCode IS NULL OR s.StageCode = @StageCode)
+          AND ((@AsRole = N'Customer' AND o.CustomerId = @UserId)
+            OR (@AsRole = N'LabOwner' AND l.OwnerUserId = @UserId))
+        ORDER BY o.CreatedAt DESC, o.OrderId DESC
+        OFFSET (@PageNo - 1) * @PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ord.sp_GetOrderDetail
+    @OrderId INT,
+    @UserId  INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+        DECLARE @Cust INT, @LabOwner INT;
+        SELECT @Cust = o.CustomerId, @LabOwner = l.OwnerUserId
+        FROM ord.Orders o
+        JOIN lab.FilmLabs l ON l.LabId = o.LabId
+        WHERE o.OrderId = @OrderId AND o.IsDeleted = 0;
+
+        IF @Cust IS NULL
+            THROW 50301, N'Đơn hàng không tồn tại.', 1;
+        IF @UserId <> @Cust AND @UserId <> @LabOwner
+           AND NOT EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                           WHERE ur.UserId = @UserId AND r.RoleCode = N'Admin')
+            THROW 50303, N'Bạn không có quyền xem đơn này.', 1;
+
+        -- Result set 1: đơn
+        SELECT o.OrderId, o.OrderCode, o.CustomerId, u.FullName AS CustomerName, o.LabId, l.LabName,
+               o.StageId, s.StageCode, s.StageName, o.FulfillmentMethod, o.ReturnMethod,
+               o.PickupAddressId, o.ReturnAddressId, o.Subtotal, o.DeliveryFee, o.PlatformFee, o.TotalAmount,
+               o.PaymentStatus, o.CustomerNote, o.EstimatedReadyDate, o.CompletedAt, o.CancelReason, o.CreatedAt
+        FROM ord.Orders o
+        JOIN lab.FilmLabs         l ON l.LabId = o.LabId
+        JOIN iam.Users            u ON u.UserId = o.CustomerId
+        JOIN ord.ProcessingStages s ON s.StageId = o.StageId
+        WHERE o.OrderId = @OrderId;
+
+        -- Result set 2: các dòng dịch vụ
+        SELECT oi.OrderItemId, oi.LabServiceId, ls.PackageName, oi.FilmStockId,
+               CONCAT(fs.Brand, N' ', fs.StockName) AS FilmStock,
+               oi.Quantity, oi.UnitPriceSnapshot, oi.LineTotal, oi.ProcessingNote
+        FROM ord.OrderItems oi
+        JOIN lab.LabServices ls ON ls.LabServiceId = oi.LabServiceId
+        LEFT JOIN lab.FilmStocks fs ON fs.StockId = oi.FilmStockId
+        WHERE oi.OrderId = @OrderId
+        ORDER BY oi.OrderItemId;
+
+        -- Result set 3: timeline stage
+        SELECT g.LogId, fst.StageCode AS FromStageCode, g.ToStageId, tst.StageCode AS ToStageCode,
+               tst.StageName AS ToStageName, g.ChangedBy, cu.FullName AS ChangedByName, g.Note, g.ChangedAt
+        FROM ord.OrderStageLog g
+        LEFT JOIN ord.ProcessingStages fst ON fst.StageId = g.FromStageId
+        JOIN ord.ProcessingStages tst ON tst.StageId = g.ToStageId
+        LEFT JOIN iam.Users cu ON cu.UserId = g.ChangedBy
+        WHERE g.OrderId = @OrderId
+        ORDER BY g.ChangedAt, g.LogId;
+
+        -- Result set 4: thanh toán
+        SELECT p.PaymentId, p.Method, p.Provider, p.ProviderTxnId, p.Amount, p.Status,
+               p.PaidAt, p.RefundedAt, p.FailureReason
+        FROM ord.Payments p
+        WHERE p.OrderId = @OrderId
+        ORDER BY p.PaymentId;
+
+        -- Result set 5: giao nhận (dưới role_LabOwner có thể rỗng do RLS dlv.DeliveryRequests)
+        SELECT d.DeliveryRequestId, d.Direction, d.Status, d.Fee, d.ScheduledAt, d.PickedUpAt,
+               d.DeliveredAt, d.ExternalTrackingCode, d.FailureReason
+        FROM dlv.DeliveryRequests d
+        WHERE d.OrderId = @OrderId AND d.IsDeleted = 0
+        ORDER BY d.DeliveryRequestId;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
