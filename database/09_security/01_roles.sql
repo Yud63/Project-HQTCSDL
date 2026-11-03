@@ -11,4 +11,5 @@ IF DATABASE_PRINCIPAL_ID(N'role_LabOwner')  IS NULL CREATE ROLE role_LabOwner;  
 IF DATABASE_PRINCIPAL_ID(N'role_Expert')    IS NULL CREATE ROLE role_Expert;     -- Photography Expert
 IF DATABASE_PRINCIPAL_ID(N'role_Delivery')  IS NULL CREATE ROLE role_Delivery;   -- Delivery Partner
 IF DATABASE_PRINCIPAL_ID(N'role_Admin')     IS NULL CREATE ROLE role_Admin;      -- System Administrator
+IF DATABASE_PRINCIPAL_ID(N'role_Auth')      IS NULL CREATE ROLE role_Auth;       -- Backend đăng ký/đăng nhập (chưa có UserId)
 GO

@@ -26,5 +26,6 @@ GO
 -- ===== 2. Quyền xem dữ liệu thật (UNMASK) =====
 GRANT UNMASK TO role_Admin;                              -- Admin xem tất cả
 GRANT UNMASK ON iam.Addresses(Phone) TO role_Delivery;   -- shipper cần SĐT người nhận
+GRANT UNMASK ON iam.Addresses(Phone) TO role_Customer;   -- khách xem lại SĐT của chính mình qua iam.sp_GetMyAddresses
 GO
 

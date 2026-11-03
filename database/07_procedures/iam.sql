@@ -257,3 +257,50 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE iam.sp_GetLoginInfo
+    @Email NVARCHAR(255)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        SET @Email = LTRIM(RTRIM(@Email));
+        IF NULLIF(@Email, N'') IS NULL
+            THROW 50105, N'Email không được rỗng.', 1;
+
+        -- Không có dòng nào = sai email; backend trả 401 chung, không tiết lộ email có tồn tại hay không
+        SELECT u.UserId, u.FullName, u.AuthProvider, u.PasswordHash, u.IsActive,
+               (SELECT STRING_AGG(r.RoleCode, N',') WITHIN GROUP (ORDER BY r.RoleCode)
+                FROM iam.UserRoles ur
+                JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                WHERE ur.UserId = u.UserId) AS Roles
+        FROM iam.Users u
+        WHERE u.Email = @Email AND u.IsDeleted = 0;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE iam.sp_GetMyAddresses
+    @UserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsActive = 1 AND IsDeleted = 0)
+            THROW 50101, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+        SELECT AddressId, Label, RecipientName, Phone, Line1, Ward, District, City, IsDefault
+        FROM iam.Addresses
+        WHERE UserId = @UserId AND IsDeleted = 0
+        ORDER BY IsDefault DESC, AddressId;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO

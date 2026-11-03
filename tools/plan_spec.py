@@ -68,6 +68,12 @@ PROCS = [
  ("arc","sp_SaveAlbum",False,"Khách tạo/sửa/xóa mềm album trong Digital Film Archive"),
  ("arc","sp_SetAlbumPhoto",False,"Khách thêm/gỡ ảnh khỏi album"),
  ("com","sp_SaveEvent",False,"Expert/Chủ lab tạo và sửa workshop, photowalk"),
+ ("iam","sp_GetLoginInfo",False,"Backend lấy hash và role để xác thực đăng nhập (role_Auth)"),
+ ("iam","sp_GetMyAddresses",False,"Khách xem danh sách địa chỉ của mình (SĐT hiện thật)"),
+ ("lab","sp_GetLabDetail",False,"Chi tiết lab đã duyệt và các gói dịch vụ đang bán"),
+ ("lab","sp_GetMyLabs",False,"Chủ lab xem lab của mình (mọi trạng thái duyệt) và gói dịch vụ"),
+ ("ord","sp_GetMyOrders",False,"Danh sách đơn của khách hoặc của lab, có lọc stage và phân trang"),
+ ("ord","sp_GetOrderDetail",False,"Chi tiết đơn: item, timeline stage, thanh toán, giao nhận"),
 ]
 
 # (unit, tên, mục đích)
@@ -264,9 +270,9 @@ DECISIONS = [
 # Phân công 5 người: thành viên -> (đơn vị module, việc chung [(tên, điểm)])
 ASSIGN = {
  "A": (["iam","audit","dlv"],  [("Quản lý repo, CI, merge, giữ Contracts/Conventions",8), ("Bảo mật: role, GRANT/DENY, RLS, Masking (09_security)",15), ("Backup/Restore + kịch bản phục hồi (10_backup)",5)]),
- "B": (["ord","lab"],          [("Rà soát index, so sánh Execution Plan trước/sau",8)]),
+ "B": (["ord","lab"],          []),
  "C": (["ord_feedback","arc"], [("Kiểm thử tích hợp end-to-end (tests/)",10), ("Kịch bản demo.sql",8)]),
- "D": (["mkt","com"],          []),
+ "D": (["mkt","com"],          [("Rà soát index, so sánh Execution Plan trước/sau",8)]),
  "E": (["ai"],                 [("Web demo (8-12 màn hình gọi sp_/vw_)",45), ("Slide thuyết trình",8)]),
 }
 REPORT_POINTS_EACH = 5   # viết báo cáo: mỗi người 5 điểm (phần của module mình)
