@@ -304,3 +304,53 @@ BEGIN
     END CATCH
 END
 GO
+
+-- ===== Đợt 8a-2: đường đọc cho web =====
+CREATE OR ALTER PROCEDURE iam.sp_ListUsers
+    @AdminUserId INT,
+    @RoleCode    NVARCHAR(30)  = NULL,
+    @IsActive    BIT           = NULL,
+    @Keyword     NVARCHAR(100) = NULL,   -- tìm theo Email hoặc FullName
+    @PageNo      INT           = 1,
+    @PageSize    INT           = 20
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        DECLARE @Like NVARCHAR(210) = NULL;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                       WHERE ur.UserId = @AdminUserId AND r.RoleCode = N'Admin')
+            THROW 50103, N'Chỉ Admin được xem danh sách người dùng.', 1;
+        IF @RoleCode IS NOT NULL AND NOT EXISTS (SELECT 1 FROM iam.Roles WHERE RoleCode = @RoleCode)
+            THROW 50105, N'RoleCode không tồn tại.', 1;
+        IF @PageNo IS NULL OR @PageNo < 1 OR @PageSize IS NULL OR @PageSize < 1 OR @PageSize > 100
+            THROW 50105, N'PageNo phải từ 1, PageSize phải từ 1 đến 100.', 1;
+
+        SET @Keyword = NULLIF(LTRIM(RTRIM(@Keyword)), N'');
+        IF @Keyword IS NOT NULL
+            SET @Like = N'%' + REPLACE(REPLACE(REPLACE(@Keyword, N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%';
+
+        -- Không trả PasswordHash và Phone
+        SELECT u.UserId, u.Email, u.FullName, u.AuthProvider, u.IsActive,
+               (SELECT STRING_AGG(r.RoleCode, N',') WITHIN GROUP (ORDER BY r.RoleCode)
+                FROM iam.UserRoles ur
+                JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                WHERE ur.UserId = u.UserId) AS Roles,
+               u.LastLoginAt, u.CreatedAt,
+               COUNT(*) OVER () AS TotalRows
+        FROM iam.Users u
+        WHERE u.IsDeleted = 0
+          AND (@IsActive IS NULL OR u.IsActive = @IsActive)
+          AND (@RoleCode IS NULL OR EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                                            WHERE ur.UserId = u.UserId AND r.RoleCode = @RoleCode))
+          AND (@Like IS NULL OR u.Email LIKE @Like OR u.FullName LIKE @Like)
+        ORDER BY u.UserId
+        OFFSET (@PageNo - 1) * @PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO

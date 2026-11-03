@@ -74,6 +74,10 @@ PROCS = [
  ("lab","sp_GetMyLabs",False,"Chủ lab xem lab của mình (mọi trạng thái duyệt) và gói dịch vụ"),
  ("ord","sp_GetMyOrders",False,"Danh sách đơn của khách hoặc của lab, có lọc stage và phân trang"),
  ("ord","sp_GetOrderDetail",False,"Chi tiết đơn: item, timeline stage, thanh toán, giao nhận"),
+ ("lab","sp_GetReferenceData",False,"Danh mục khổ phim, loại dịch vụ, stage cho form và bộ lọc"),
+ ("lab","sp_ListLabsForApproval",False,"Admin xem lab theo trạng thái duyệt (mặc định Pending), có phân trang"),
+ ("iam","sp_ListUsers",False,"Admin xem danh sách người dùng, lọc role/trạng thái/từ khóa, có phân trang"),
+ ("ai","sp_SearchKnowledge",False,"Tìm chunk tri thức đã duyệt (Full-Text, fallback LIKE) cho chatbot RAG"),
 ]
 
 # (unit, tên, mục đích)

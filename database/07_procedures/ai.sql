@@ -304,3 +304,78 @@ BEGIN
     END CATCH
 END
 GO
+
+-- ===== Đợt 8a-2: đường đọc cho chatbot RAG =====
+-- WITH EXECUTE AS OWNER: phần Full-Text chạy bằng dynamic SQL (không đi theo ownership chaining),
+-- nếu không role_Customer/LabOwner/Expert bị từ chối đọc ai.KnowledgeDocs.
+CREATE OR ALTER PROCEDURE ai.sp_SearchKnowledge
+    @UserId INT,
+    @Query  NVARCHAR(400),
+    @TopN   TINYINT      = 3,
+    @Topic  NVARCHAR(50) = NULL
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        DECLARE @Q NVARCHAR(400), @Mode NVARCHAR(10) = N'FullText', @Tokens INT;
+
+        IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsDeleted = 0 AND IsActive = 1)
+            THROW 50801, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+        SET @Q = NULLIF(LTRIM(RTRIM(REPLACE(@Query, N'"', N' '))), N'');
+        IF @Q IS NULL
+            THROW 50805, N'Câu hỏi không được rỗng.', 1;
+        IF @TopN IS NULL OR @TopN < 1 OR @TopN > 10
+            THROW 50805, N'TopN phải từ 1 đến 10.', 1;
+
+        CREATE TABLE #hit (KnowledgeDocId INT NOT NULL PRIMARY KEY, Score INT NOT NULL);
+
+        -- Ưu tiên Full-Text nếu đã có FT index
+        IF EXISTS (SELECT 1 FROM sys.fulltext_indexes WHERE object_id = OBJECT_ID(N'ai.KnowledgeDocs'))
+        BEGIN
+            EXEC sp_executesql
+                 N'INSERT INTO #hit (KnowledgeDocId, Score)
+                   SELECT d.KnowledgeDocId, f.[RANK]
+                   FROM FREETEXTTABLE(ai.KnowledgeDocs, (Title, Content), @q) f
+                   JOIN ai.KnowledgeDocs d ON d.KnowledgeDocId = f.[KEY]
+                   WHERE d.IsApproved = 1 AND d.IsDeleted = 0 AND (@t IS NULL OR d.Topic = @t)',
+                 N'@q NVARCHAR(400), @t NVARCHAR(50)', @q = @Q, @t = @Topic;
+        END
+
+        -- Không có FT index, FT chưa populate xong, hoặc không khớp -> LIKE theo từng từ
+        IF NOT EXISTS (SELECT 1 FROM #hit)
+        BEGIN
+            SET @Mode = N'Like';
+            DECLARE @Tok TABLE (Pat NVARCHAR(210) NOT NULL);
+
+            INSERT INTO @Tok (Pat)
+            SELECT TOP (8) t.Pat
+            FROM (SELECT DISTINCT N'%' + REPLACE(REPLACE(REPLACE(LTRIM(RTRIM(s.value)), N'[', N'[[]'), N'%', N'[%]'), N'_', N'[_]') + N'%' AS Pat
+                  FROM STRING_SPLIT(@Q, N' ') s
+                  WHERE LEN(LTRIM(RTRIM(s.value))) >= 3) t
+            ORDER BY LEN(t.Pat) DESC;
+
+            SET @Tokens = (SELECT COUNT(*) FROM @Tok);
+
+            INSERT INTO #hit (KnowledgeDocId, Score)
+            SELECT d.KnowledgeDocId, COUNT(*) * 100 / NULLIF(@Tokens, 0)
+            FROM ai.KnowledgeDocs d
+            JOIN @Tok k ON d.Title LIKE k.Pat OR d.Content LIKE k.Pat
+            WHERE d.IsApproved = 1 AND d.IsDeleted = 0 AND (@Topic IS NULL OR d.Topic = @Topic)
+            GROUP BY d.KnowledgeDocId;
+        END
+
+        -- Chỉ trả chunk đã duyệt; Content là dữ liệu không tin cậy, backend không coi là lệnh
+        SELECT TOP (@TopN) d.KnowledgeDocId, d.SourceArticleId, d.ChunkIndex, d.Title, d.Topic, d.Content,
+               h.Score, @Mode AS MatchMode
+        FROM #hit h
+        JOIN ai.KnowledgeDocs d ON d.KnowledgeDocId = h.KnowledgeDocId
+        ORDER BY h.Score DESC, d.KnowledgeDocId;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO

@@ -415,3 +415,72 @@ BEGIN
     END CATCH
 END
 GO
+
+-- ===== Đợt 8a-2: đường đọc cho web =====
+CREATE OR ALTER PROCEDURE lab.sp_GetReferenceData
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        -- Result set 1: khổ phim
+        SELECT FormatId, FormatCode, FormatName
+        FROM lab.FilmFormats
+        ORDER BY FormatId;
+
+        -- Result set 2: loại dịch vụ
+        SELECT ServiceTypeId, ServiceCode, ServiceName, Category, Description
+        FROM lab.ServiceTypes
+        ORDER BY Category, ServiceTypeId;
+
+        -- Result set 3: các stage xử lý đơn (theo thứ tự)
+        SELECT StageId, StageCode, StageName, SortOrder, IsTerminal
+        FROM ord.ProcessingStages
+        ORDER BY SortOrder;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE lab.sp_ListLabsForApproval
+    @AdminUserId INT,
+    @Status      NVARCHAR(12) = N'Pending',   -- NULL = mọi trạng thái
+    @PageNo      INT          = 1,
+    @PageSize    INT          = 20
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId
+                       WHERE ur.UserId = @AdminUserId AND r.RoleCode = N'Admin')
+            THROW 50203, N'Chỉ Admin được xem danh sách lab chờ duyệt.', 1;
+        IF @Status IS NOT NULL AND @Status NOT IN (N'Pending', N'Approved', N'Rejected', N'Suspended')
+            THROW 50205, N'Trạng thái duyệt không hợp lệ.', 1;
+        IF @PageNo IS NULL OR @PageNo < 1 OR @PageSize IS NULL OR @PageSize < 1 OR @PageSize > 100
+            THROW 50205, N'PageNo phải từ 1, PageSize phải từ 1 đến 100.', 1;
+
+        SELECT l.LabId, l.LabName, l.OwnerUserId, u.FullName AS OwnerName, u.Email AS OwnerEmail,
+               l.AddressLine, l.Ward, l.District, l.City, l.Phone, l.ApprovalStatus,
+               (SELECT COUNT(*) FROM lab.LabServices s WHERE s.LabId = l.LabId AND s.IsDeleted = 0) AS ServiceCount,
+               l.CreatedAt,
+               a.Decision AS LastDecision, a.Reason AS LastDecisionReason, a.DecidedAt AS LastDecidedAt,
+               COUNT(*) OVER () AS TotalRows
+        FROM lab.FilmLabs l
+        JOIN iam.Users u ON u.UserId = l.OwnerUserId
+        OUTER APPLY (SELECT TOP 1 x.Decision, x.Reason, x.DecidedAt
+                     FROM lab.LabApprovals x
+                     WHERE x.LabId = l.LabId
+                     ORDER BY x.DecidedAt DESC, x.ApprovalId DESC) a
+        WHERE l.IsDeleted = 0
+          AND (@Status IS NULL OR l.ApprovalStatus = @Status)
+        ORDER BY l.CreatedAt, l.LabId          -- hàng chờ: lab nộp trước xử lý trước
+        OFFSET (@PageNo - 1) * @PageSize ROWS FETCH NEXT @PageSize ROWS ONLY;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
