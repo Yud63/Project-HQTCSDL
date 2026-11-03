@@ -10,7 +10,7 @@ CREATE TABLE #exp (SchemaName SYSNAME COLLATE DATABASE_DEFAULT,
                    Kind       CHAR(1) COLLATE DATABASE_DEFAULT);
 INSERT #exp VALUES
 
- -- Procedure (57)
+ -- Procedure (61)
  (N'iam',N'sp_RegisterUser','P'),
  (N'lab',N'sp_ApproveLab','P'),(N'lab',N'sp_SearchLabs','P'),(N'lab',N'sp_RecalcLabRating','P'),
  (N'ord',N'sp_CreateOrder','P'),(N'ord',N'sp_UpdateOrderStage','P'),(N'ord',N'sp_CancelOrder','P'),(N'ord',N'sp_ProcessPayment','P'),
@@ -30,6 +30,7 @@ INSERT #exp VALUES
  (N'iam',N'sp_GetLoginInfo','P'),(N'iam',N'sp_GetMyAddresses','P'),
  (N'lab',N'sp_GetLabDetail','P'),(N'lab',N'sp_GetMyLabs','P'),
  (N'ord',N'sp_GetMyOrders','P'),(N'ord',N'sp_GetOrderDetail','P'),
+ (N'lab',N'sp_GetReferenceData','P'),(N'lab',N'sp_ListLabsForApproval','P'),(N'iam',N'sp_ListUsers','P'),(N'ai',N'sp_SearchKnowledge','P'),
  -- Function (14 + 1)
  (N'lab',N'fn_LabCapacityLeft','F'),(N'lab',N'fn_DistanceKm','F'),
  (N'ord',N'fn_CalcOrderTotal','F'),(N'ord',N'fn_CalcPlatformFee','F'),(N'ord',N'fn_NextStage','F'),(N'ord',N'fn_IsValidTransition','F'),(N'ord',N'fn_CalcDeliveryFee','F'),(N'ord',N'fn_LabAvgRating','F'),

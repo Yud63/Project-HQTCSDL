@@ -185,3 +185,7 @@ GRANT EXECUTE ON ord.sp_GetMyOrders     TO role_Customer, role_LabOwner;
 GRANT EXECUTE ON ord.sp_GetOrderDetail  TO role_Customer, role_LabOwner;
 GRANT EXECUTE ON lab.sp_GetLabDetail    TO role_Customer, role_LabOwner, role_Expert;
 GRANT EXECUTE ON lab.sp_GetMyLabs       TO role_LabOwner;
+
+-- ===== Đợt 8a-2: đường đọc cho web và AI (Admin đã có EXECUTE theo schema) =====
+GRANT EXECUTE ON lab.sp_GetReferenceData TO role_Customer, role_LabOwner, role_Expert;
+GRANT EXECUTE ON ai.sp_SearchKnowledge   TO role_Customer, role_LabOwner, role_Expert;
