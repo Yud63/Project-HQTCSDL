@@ -181,6 +181,8 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER: nhánh Full-Text chạy bằng dynamic SQL (không đi theo ownership chaining),
+-- người gọi không có SELECT trực tiếp trên mkt.Listings nên nếu không có EXECUTE AS OWNER sẽ bị lỗi 229.
 CREATE OR ALTER PROCEDURE mkt.sp_SearchListings
     @Keyword     NVARCHAR(200)  = NULL,
     @CategoryId  INT            = NULL,
@@ -192,6 +194,7 @@ CREATE OR ALTER PROCEDURE mkt.sp_SearchListings
     @SortBy      NVARCHAR(20)   = N'Newest',
     @PageNo      INT            = 1,
     @PageSize    INT            = 20
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;
