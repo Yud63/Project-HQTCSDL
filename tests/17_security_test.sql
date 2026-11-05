@@ -1045,6 +1045,377 @@ ELSE PRINT N'FAIL: T61 com.Articles UPDATE của mình, lỗi ' + CAST(@err AS N
 
 DROP USER u_adm3;
 
+
+-- ===== RLS mkt.MarketTransactions + mkt.Messages (Việc 4D.3b) =====
+GRANT SELECT, INSERT, UPDATE, DELETE ON mkt.MarketTransactions TO u_blk;
+GRANT SELECT, INSERT, UPDATE, DELETE ON mkt.Messages TO u_blk;
+GRANT EXECUTE ON mkt.fn_SellerRating TO u_blk;
+GRANT EXECUTE ON mkt.fn_SellerRatingCount TO u_blk;
+GRANT EXECUTE ON mkt.sp_PlaceMarketOrder TO u_blk;
+GRANT EXECUTE ON mkt.sp_SendMessage TO u_blk;
+GRANT EXECUTE ON mkt.sp_UpdateMarketTransaction TO u_blk;
+IF USER_ID(N'u_adm4') IS NOT NULL DROP USER u_adm4;
+CREATE USER u_adm4 WITHOUT LOGIN;  ALTER ROLE role_Admin ADD MEMBER u_adm4;
+GRANT SELECT ON mkt.MarketTransactions TO u_adm4;
+GRANT SELECT ON mkt.Messages TO u_adm4;
+DECLARE @sl INT, @by INT, @ox INT, @mc INT, @ml INT, @mt INT, @k INT, @k2 INT, @xt DECIMAL(3,2), @rt DECIMAL(3,2), @xc INT, @rc INT;
+SET @sl = (SELECT TOP 1 UserId FROM iam.Users WHERE IsDeleted = 0 AND IsActive = 1 ORDER BY UserId);
+SET @by = (SELECT TOP 1 UserId FROM iam.Users WHERE IsDeleted = 0 AND IsActive = 1 AND UserId <> @sl ORDER BY UserId);
+SET @ox = (SELECT TOP 1 UserId FROM iam.Users WHERE IsDeleted = 0 AND IsActive = 1 AND UserId NOT IN (@sl, @by) ORDER BY UserId);
+SET @mc = (SELECT TOP 1 CategoryId FROM mkt.ListingCategories ORDER BY CategoryId);
+
+-- T62: người mua và người bán đều thấy giao dịch của mình (FILTER cho qua hai bên)
+SET @err = 0; SET @msg = NULL; SET @e = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000);
+EXEC sp_set_session_context N'UserId', @by;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+EXEC sp_set_session_context N'UserId', @sl;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @c = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 AND @c = 1 PRINT N'PASS: T62 người mua và người bán đều thấy giao dịch của mình';
+ELSE PRINT N'FAIL: T62 đọc giao dịch của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người mua thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', người bán thấy=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL');
+
+-- T63: người lạ không thấy giao dịch của người khác; Admin (role_Admin) thấy
+SET @err = 0; SET @msg = NULL; SET @e = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000);
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_adm4';
+BEGIN TRY
+    SET @c = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 0 AND @c = 1 PRINT N'PASS: T63 người lạ không thấy giao dịch của người khác, Admin thấy';
+ELSE PRINT N'FAIL: T63 lọc giao dịch, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người lạ thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', Admin thấy=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL');
+
+-- T64: người lạ INSERT giao dịch hộ người mua khác (BuyerId <> UserId trong session) phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+    VALUES (N'MK-T17-0003', @ml, @sl, @by, 1, 1000000, 50000);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0003');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 0 PRINT N'PASS: T64 BLOCK AFTER INSERT chặn người lạ tạo giao dịch hộ người mua khác (33504)';
+ELSE PRINT N'FAIL: T64 mkt.MarketTransactions INSERT người lạ, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng đã thêm=' + CAST(@e AS NVARCHAR(10));
+
+-- T65: người lạ UPDATE và DELETE giao dịch của người khác: FILTER ẩn dòng nên 0 dòng bị ảnh hưởng, dữ liệu nguyên vẹn
+SET @err = 0; SET @msg = NULL; SET @c = NULL; SET @k = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000);
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE mkt.MarketTransactions SET Note = N'Test17 bị sửa' WHERE TransactionCode = N'MK-T17-0001';
+    SET @c = @@ROWCOUNT;
+    DELETE FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001';
+    SET @k = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001' AND Note IS NULL);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 0 AND @k = 0 AND @e = 1 PRINT N'PASS: T65 người lạ UPDATE và DELETE giao dịch ảnh hưởng 0 dòng, dữ liệu nguyên vẹn';
+ELSE PRINT N'FAIL: T65 người lạ sửa/xóa giao dịch, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; UPDATE=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', DELETE=' + ISNULL(CAST(@k AS NVARCHAR(10)), N'NULL') + N', còn nguyên=' + CAST(@e AS NVARCHAR(10));
+
+-- T66: người mua đổi BuyerId của giao dịch sang người khác phải bị chặn 33504 (AFTER UPDATE)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000);
+EXEC sp_set_session_context N'UserId', @by;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE mkt.MarketTransactions SET BuyerId = @ox WHERE TransactionCode = N'MK-T17-0001';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001' AND BuyerId = @by);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T66 BLOCK AFTER UPDATE chặn đổi người mua sang người khác (33504)';
+ELSE PRINT N'FAIL: T66 mkt.MarketTransactions đổi BuyerId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người mua vẫn là mình=' + CAST(@e AS NVARCHAR(10));
+
+-- T67: người gửi và người nhận đều thấy tin nhắn
+SET @err = 0; SET @msg = NULL; SET @e = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.Messages (ListingId, SenderId, ReceiverId, Body) VALUES (@ml, @sl, @by, N'Test17 tin nhắn');
+EXEC sp_set_session_context N'UserId', @sl;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin nhắn');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+EXEC sp_set_session_context N'UserId', @by;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @c = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin nhắn');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 AND @c = 1 PRINT N'PASS: T67 người gửi và người nhận đều thấy tin nhắn';
+ELSE PRINT N'FAIL: T67 đọc tin nhắn của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người gửi thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', người nhận thấy=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL');
+
+-- T68: người lạ không thấy tin nhắn của người khác; Admin thấy
+SET @err = 0; SET @msg = NULL; SET @e = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.Messages (ListingId, SenderId, ReceiverId, Body) VALUES (@ml, @sl, @by, N'Test17 tin nhắn');
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin nhắn');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_adm4';
+BEGIN TRY
+    SET @c = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin nhắn');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 0 AND @c = 1 PRINT N'PASS: T68 người lạ không thấy tin nhắn của người khác, Admin thấy';
+ELSE PRINT N'FAIL: T68 lọc tin nhắn, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người lạ thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', Admin thấy=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL');
+
+-- T69: người lạ INSERT tin nhắn giả mạo người gửi (SenderId <> UserId trong session) phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO mkt.Messages (ListingId, SenderId, ReceiverId, Body) VALUES (@ml, @sl, @by, N'Test17 tin giả');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin giả');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 0 PRINT N'PASS: T69 BLOCK AFTER INSERT chặn tin nhắn giả mạo người gửi (33504)';
+ELSE PRINT N'FAIL: T69 mkt.Messages INSERT giả mạo, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng đã thêm=' + CAST(@e AS NVARCHAR(10));
+
+-- T70: người lạ UPDATE ReadAt ảnh hưởng 0 dòng; người nhận UPDATE ReadAt thành công 1 dòng
+SET @err = 0; SET @msg = NULL; SET @c = NULL; SET @k = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.Messages (ListingId, SenderId, ReceiverId, Body) VALUES (@ml, @sl, @by, N'Test17 tin nhắn');
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE mkt.Messages SET ReadAt = SYSUTCDATETIME() WHERE Body = N'Test17 tin nhắn';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+EXEC sp_set_session_context N'UserId', @by;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE mkt.Messages SET ReadAt = SYSUTCDATETIME() WHERE Body = N'Test17 tin nhắn';
+    SET @k = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.Messages WHERE Body = N'Test17 tin nhắn' AND ReadAt IS NOT NULL);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 0 AND @k = 1 AND @e = 1 PRINT N'PASS: T70 người lạ UPDATE ReadAt 0 dòng, người nhận UPDATE ReadAt được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T70 UPDATE ReadAt, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; người lạ=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', người nhận=' + ISNULL(CAST(@k AS NVARCHAR(10)), N'NULL') + N', đã đọc=' + CAST(@e AS NVARCHAR(10));
+
+-- T71: fn_SellerRating và fn_SellerRatingCount (EXECUTE AS OWNER) vẫn đúng khi người gọi không thấy dòng giao dịch nào của người bán
+SET @err = 0; SET @msg = NULL; SET @e = NULL; SET @rt = NULL; SET @rc = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee, Status, CompletedAt, BuyerRating, RatedAt)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000, N'Completed', SYSUTCDATETIME(), 4, SYSUTCDATETIME());
+SET @xt = (SELECT CAST(AVG(CAST(BuyerRating AS DECIMAL(5,2))) AS DECIMAL(3,2)) FROM mkt.MarketTransactions WHERE SellerId = @sl AND BuyerRating IS NOT NULL);
+SET @xc = (SELECT COUNT(BuyerRating) FROM mkt.MarketTransactions WHERE SellerId = @sl);
+EXEC sp_set_session_context N'UserId', @ox;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionCode = N'MK-T17-0001');
+    SET @rt = mkt.fn_SellerRating(@sl);
+    SET @rc = mkt.fn_SellerRatingCount(@sl);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 0 AND @xc >= 1 AND @rt = @xt AND @rc = @xc PRINT N'PASS: T71 fn_SellerRating và fn_SellerRatingCount đúng dù người gọi không thấy giao dịch nào của người bán';
+ELSE PRINT N'FAIL: T71 điểm người bán, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy dòng=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', điểm=' + ISNULL(CAST(@rt AS NVARCHAR(10)), N'NULL') + N' (mong đợi ' + ISNULL(CAST(@xt AS NVARCHAR(10)), N'NULL') + N'), số lượt=' + ISNULL(CAST(@rc AS NVARCHAR(10)), N'NULL') + N' (mong đợi ' + ISNULL(CAST(@xc AS NVARCHAR(10)), N'NULL') + N')';
+
+-- T72: người mua gọi mkt.sp_PlaceMarketOrder chạy được dưới BLOCK (procedure đặt UserId session = người mua), bọc ROLLBACK
+SET @err = 0; SET @msg = NULL; SET @mt = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    EXEC mkt.sp_PlaceMarketOrder @ListingId = @ml, @BuyerId = @by, @Quantity = 1, @NewTransactionId = @mt OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionId = @mt AND BuyerId = @by AND ListingId = @ml);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @mt IS NOT NULL AND @e = 1 PRINT N'PASS: T72 người mua gọi mkt.sp_PlaceMarketOrder chạy được dưới BLOCK (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T72 mkt.sp_PlaceMarketOrder, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; giao dịch=' + ISNULL(CAST(@mt AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T73: người gửi gọi mkt.sp_SendMessage chạy được dưới BLOCK (procedure đặt UserId session = người gửi), bọc ROLLBACK
+SET @err = 0; SET @msg = NULL; SET @k = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 5, N'Test17');
+SET @ml = SCOPE_IDENTITY();
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    EXEC mkt.sp_SendMessage @ListingId = @ml, @SenderId = @by, @ReceiverId = @sl, @Body = N'Test17 qua procedure', @NewMessageId = @k OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.Messages WHERE MessageId = @k AND SenderId = @by AND ReceiverId = @sl);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @k IS NOT NULL AND @e = 1 PRINT N'PASS: T73 người gửi gọi mkt.sp_SendMessage chạy được dưới BLOCK (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T73 mkt.sp_SendMessage, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; tin nhắn=' + ISNULL(CAST(@k AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T74: hồi quy RLS: người mua hoàn tất giao dịch của mình, tin KHÔNG được thành Sold vì còn giao dịch Pending của người mua khác (người mua không thấy dòng đó nhưng procedure chạy OWNER vẫn thấy)
+SET @err = 0; SET @msg = NULL; SET @mt = NULL; SET @e = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City, Status)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 0, N'Test17', N'Reserved');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee, Status, ShippedAt)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000, N'Shipped', SYSUTCDATETIME());
+SET @mt = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee)
+VALUES (N'MK-T17-0002', @ml, @sl, @ox, 1, 1000000, 50000);
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    EXEC mkt.sp_UpdateMarketTransaction @TransactionId = @mt, @ActorUserId = @by, @NewStatus = N'Completed';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionId = @mt AND Status = N'Completed');
+SET @c = (SELECT COUNT(*) FROM mkt.Listings WHERE ListingId = @ml AND Status = N'Reserved');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 AND @c = 1 PRINT N'PASS: T74 hoàn tất giao dịch không làm tin thành Sold khi còn giao dịch khác (OWNER thấy đủ dòng)';
+ELSE PRINT N'FAIL: T74 hồi quy Sold, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; giao dịch Completed=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', tin còn Reserved=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL');
+
+-- T75: job role_System (UserId session NULL) gọi mkt.sp_RunMaintenance phải tự hoàn tất được giao dịch Shipped quá 7 ngày (OWNER bỏ qua RLS)
+SET @err = 0; SET @msg = NULL; SET @mt = NULL; SET @e = NULL; SET @k = NULL; SET @k2 = NULL;
+BEGIN TRAN;
+INSERT INTO mkt.Listings (SellerId, CategoryId, ListingType, Title, Condition, Price, Quantity, City, Status)
+VALUES (@sl, @mc, N'Sell', N'Test17 tin đăng', N'Good', 1000000, 0, N'Test17', N'Reserved');
+SET @ml = SCOPE_IDENTITY();
+INSERT INTO mkt.MarketTransactions (TransactionCode, ListingId, SellerId, BuyerId, Quantity, UnitPrice, PlatformFee, Status, ShippedAt)
+VALUES (N'MK-T17-0001', @ml, @sl, @by, 1, 1000000, 50000, N'Shipped', DATEADD(DAY, -8, SYSUTCDATETIME()));
+SET @mt = SCOPE_IDENTITY();
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_sys';
+BEGIN TRY
+    EXEC mkt.sp_RunMaintenance @ClosedListings = @k OUTPUT, @AutoCompleted = @k2 OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE TransactionId = @mt AND Status = N'Completed');
+IF @@TRANCOUNT > 0 ROLLBACK;
+EXEC sp_set_session_context N'UserId', NULL;
+IF @err = 0 AND @k2 >= 1 AND @e = 1 PRINT N'PASS: T75 role_System chạy mkt.sp_RunMaintenance tự hoàn tất giao dịch Shipped quá 7 ngày (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T75 mkt.sp_RunMaintenance role_System, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; tự hoàn tất=' + ISNULL(CAST(@k2 AS NVARCHAR(10)), N'NULL') + N', giao dịch Completed=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+DROP USER u_adm4;
+
 -- Dọn
 EXEC sp_set_session_context N'UserId', NULL;
 DROP USER u_blk;
