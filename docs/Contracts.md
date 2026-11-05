@@ -157,7 +157,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 
 ## 8. Danh mục đối tượng T-SQL (kế hoạch)
 
-★ = procedure bắt buộc. Tổng: **61 procedure** (16 bắt buộc, 45 mở rộng), **15 function**, **28 trigger**, **14 view**, **2 sequence**.
+★ = procedure bắt buộc. Tổng: **61 procedure** (16 bắt buộc, 45 mở rộng), **16 function**, **28 trigger**, **14 view**, **2 sequence**.
 
 ### `iam`: M1 Identity & Access (người phụ trách A)
 
@@ -278,6 +278,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `mkt.sp_RunMaintenance` | Đóng tin hết hạn, tự hoàn tất giao dịch quá 7 ngày |
 | Function | `mkt.fn_CalcMarketplaceFee` | Phí Marketplace hiệu lực |
 | Function | `mkt.fn_SellerRating` | Điểm trung bình người bán |
+| Function | `mkt.fn_SellerRatingCount` | Số lượt đánh giá người bán (công khai, chạy WITH EXECUTE AS OWNER) |
 | Trigger | `mkt.trg_Listings_Guard` (trên `mkt.Listings`) | Chặn đổi trạng thái/số lượng sai |
 | Trigger | `mkt.trg_ListingImages_Limit` (trên `mkt.ListingImages`) | Tối đa 8 ảnh |
 | Trigger | `mkt.trg_MarketTransactions_Guard` (trên `mkt.MarketTransactions`) | Chuyển trạng thái giao dịch hợp lệ |

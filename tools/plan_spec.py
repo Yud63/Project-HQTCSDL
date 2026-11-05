@@ -94,6 +94,7 @@ FUNCS = [
  ("arc","fn_GetPhotoMetadata","Table-valued: đọc ExtraJson bằng OPENJSON"),
  ("mkt","fn_CalcMarketplaceFee","Phí Marketplace hiệu lực"),
  ("mkt","fn_SellerRating","Điểm trung bình người bán"),
+ ("mkt","fn_SellerRatingCount","Số lượt đánh giá người bán (công khai, chạy WITH EXECUTE AS OWNER)"),
  ("com","fn_EventSeatsLeft","Số chỗ còn lại của sự kiện"),
  ("ai","fn_LabScores","Inline table-valued: điểm gợi ý lab"),
  ("ord_feedback","fn_IsValidComplaintTransition","Kiểm tra chuyển trạng thái khiếu nại"),

@@ -28,7 +28,7 @@ unit_tables = {u[0]: [u[1] + "." + x for x in u[5]] for u in P.UNITS}
 all_listed = [x for v in unit_tables.values() for x in v]
 assert sorted(all_listed) == sorted(by.keys()), "UNITS không khớp danh sách bảng của schema_spec"
 assert len(P.PROCS) == 61 and sum(1 for p in P.PROCS if p[2]) == 16, "Phải có 61 procedure, 16 bắt buộc"
-assert len(P.FUNCS) == 15 and len(P.TRIGGERS) == 28 and len(P.VIEWS) == 14
+assert len(P.FUNCS) == 16 and len(P.TRIGGERS) == 28 and len(P.VIEWS) == 14
 assert sum(u[4] for u in P.UNITS) == 114, "Tổng business rule phải là 114"
 star_names = {p[1] for p in P.PROCS if p[2]}
 sig_names = {s[0].split(".")[1] for s in P.STAR_SIGNATURES}
