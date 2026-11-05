@@ -601,6 +601,112 @@ IF @@TRANCOUNT > 0 ROLLBACK;
 IF @err = 33504 AND @e = 1 PRINT N'PASS: T39 BLOCK AFTER UPDATE chặn đổi chủ ai.RecommendationLogs (33504)';
 ELSE PRINT N'FAIL: T39 ai.RecommendationLogs đổi UserId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; chủ vẫn là 6=' + CAST(@e AS NVARCHAR(10));
 
+
+-- ===== BLOCK predicate arc.ScanFiles (Việc 4C.3b) =====
+GRANT SELECT, INSERT, UPDATE, DELETE ON arc.ScanFiles TO u_blk;
+DECLARE @o1 INT, @lo INT, @cu INT, @st INT, @sf UNIQUEIDENTIFIER;
+SELECT @o1 = o.OrderId, @cu = o.CustomerId, @lo = l.OwnerUserId
+FROM ord.Orders o JOIN lab.FilmLabs l ON l.LabId = o.LabId WHERE o.OrderCode = N'FL-2026-000001';
+SET @st = (SELECT TOP 1 UserId FROM iam.Users WHERE UserId NOT IN (@cu, @lo) AND IsDeleted = 0 ORDER BY UserId);
+
+-- T40: role_LabOwner thật gọi arc.sp_UploadScan cho đơn lab mình phải chạy được dưới BLOCK (test 09 chỉ chạy dưới dbo), bọc ROLLBACK
+IF USER_ID(N'u_labs') IS NOT NULL DROP USER u_labs;
+CREATE USER u_labs WITHOUT LOGIN;  ALTER ROLE role_LabOwner ADD MEMBER u_labs;
+SET @err = 0; SET @msg = NULL; SET @sf = NULL;
+BEGIN TRAN;
+DISABLE TRIGGER ord.trg_Orders_PreventInvalidStage ON ord.Orders;
+UPDATE ord.Orders SET StageId = 8 WHERE OrderId = @o1;
+EXECUTE AS USER = N'u_labs';
+BEGIN TRY
+    EXEC arc.sp_UploadScan @o1, @lo, N'test17_scan.jpg', N'https://storage.example.com/test17_scan.jpg', N'image/jpeg', 1000, @NewScanFileId = @sf OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.ScanFiles WHERE ScanFileId = @sf AND OwnerUserId = @cu AND UploadedBy = @lo);
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT is_disabled FROM sys.triggers WHERE name = N'trg_Orders_PreventInvalidStage' AND parent_id = OBJECT_ID(N'ord.Orders'));
+DROP USER u_labs;
+IF @err = 0 AND @sf IS NOT NULL AND @e = 1 AND @g = 0 PRINT N'PASS: T40 role_LabOwner gọi arc.sp_UploadScan chạy được dưới BLOCK (đã ROLLBACK, trigger đơn vẫn bật)';
+ELSE PRINT N'FAIL: T40 role_LabOwner gọi arc.sp_UploadScan, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10)) + N', trigger bị tắt=' + ISNULL(CAST(@g AS NVARCHAR(10)), N'NULL');
+
+-- T41: người lạ (không phải khách, không phải chủ lab của đơn) INSERT ảnh scan của đơn phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', @st;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO arc.ScanFiles (OrderId, OwnerUserId, UploadedBy, FileName, StorageUrl, ContentType, FileSizeBytes)
+    VALUES (@o1, @cu, @st, N'test17_x.jpg', N'https://storage.example.com/test17_x.jpg', N'image/jpeg', 1000);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.ScanFiles WHERE FileName = N'test17_x.jpg');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 0 PRINT N'PASS: T41 BLOCK AFTER INSERT chặn người lạ ghi ảnh scan của đơn (33504)';
+ELSE PRINT N'FAIL: T41 arc.ScanFiles INSERT người lạ, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng đã thêm=' + CAST(@e AS NVARCHAR(10));
+
+-- T42: chủ lab của đơn INSERT trực tiếp ảnh scan của đơn lab mình phải thành công (nhánh chủ lab của fn_ScanAccess), bọc ROLLBACK
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', @lo;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO arc.ScanFiles (OrderId, OwnerUserId, UploadedBy, FileName, StorageUrl, ContentType, FileSizeBytes)
+    VALUES (@o1, @cu, @lo, N'test17_y.jpg', N'https://storage.example.com/test17_y.jpg', N'image/jpeg', 1000);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.ScanFiles WHERE FileName = N'test17_y.jpg');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T42 chủ lab của đơn ghi ảnh scan của đơn lab mình vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T42 arc.ScanFiles INSERT chủ lab, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T43: người lạ UPDATE điểm chất lượng ảnh của đơn: FILTER ẩn dòng nên 0 dòng bị sửa, điểm không đổi
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO arc.ScanFiles (OrderId, OwnerUserId, UploadedBy, FileName, StorageUrl, ContentType, FileSizeBytes, QualityScore, QualityStatus)
+VALUES (@o1, @cu, @lo, N'test17_z.jpg', N'https://storage.example.com/test17_z.jpg', N'image/jpeg', 1000, 80, N'Passed');
+EXEC sp_set_session_context N'UserId', @st;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE arc.ScanFiles SET QualityScore = 10, QualityStatus = N'Failed' WHERE FileName = N'test17_z.jpg';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.ScanFiles WHERE FileName = N'test17_z.jpg' AND QualityScore = 80 AND QualityStatus = N'Passed');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 0 AND @e = 1 PRINT N'PASS: T43 người lạ UPDATE điểm ảnh scan ảnh hưởng 0 dòng, điểm không đổi';
+ELSE PRINT N'FAIL: T43 arc.ScanFiles UPDATE người lạ, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', điểm còn nguyên=' + CAST(@e AS NVARCHAR(10));
+
+-- T44: chủ lab của đơn UPDATE điểm chất lượng ảnh của đơn lab mình phải thành công, bọc ROLLBACK
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO arc.ScanFiles (OrderId, OwnerUserId, UploadedBy, FileName, StorageUrl, ContentType, FileSizeBytes, QualityScore, QualityStatus)
+VALUES (@o1, @cu, @lo, N'test17_z.jpg', N'https://storage.example.com/test17_z.jpg', N'image/jpeg', 1000, 80, N'Passed');
+EXEC sp_set_session_context N'UserId', @lo;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE arc.ScanFiles SET QualityScore = 90 WHERE FileName = N'test17_z.jpg';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.ScanFiles WHERE FileName = N'test17_z.jpg' AND QualityScore = 90);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 1 AND @e = 1 PRINT N'PASS: T44 chủ lab của đơn UPDATE điểm ảnh scan vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T44 arc.ScanFiles UPDATE chủ lab, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
+
 -- Dọn
 EXEC sp_set_session_context N'UserId', NULL;
 DROP USER u_blk;
