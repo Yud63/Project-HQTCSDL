@@ -289,4 +289,106 @@ SET @g = (SELECT COUNT(*) FROM ai.AIChatLogs);
 IF @err = 0 AND @c >= 1 AND @e = 0 AND @g = @x PRINT N'PASS: T23 role_System gọi ai.sp_PurgeOldLogs xóa log cũ (đã ROLLBACK, dữ liệu không đổi)';
 ELSE PRINT N'FAIL: T23 role_System gọi ai.sp_PurgeOldLogs, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; đã xóa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', còn dòng cũ=' + CAST(@e AS NVARCHAR(10)) + N', trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
 
+
+-- ===== BLOCK predicate arc.Albums (Việc 4C.1b) =====
+IF USER_ID(N'u_blk') IS NOT NULL DROP USER u_blk;
+CREATE USER u_blk WITHOUT LOGIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON arc.Albums TO u_blk;
+SET @oid = (SELECT TOP 1 UserId FROM iam.Users WHERE UserId <> 6 ORDER BY UserId);
+
+-- T24: INSERT album của người khác (OwnerUserId <> UserId trong session) phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM arc.Albums);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO arc.Albums (OwnerUserId, Title) VALUES (@oid, N'Test17 album người khác');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM arc.Albums);
+IF @err = 33504 AND @g = @x PRINT N'PASS: T24 BLOCK AFTER INSERT chặn ghi album của người khác (33504)';
+ELSE PRINT N'FAIL: T24 BLOCK AFTER INSERT, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T25: INSERT album của chính mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM arc.Albums);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO arc.Albums (OwnerUserId, Title) VALUES (6, N'Test17 album của mình');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.Albums WHERE Title = N'Test17 album của mình');
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM arc.Albums);
+IF @err = 0 AND @e = 1 AND @g = @x PRINT N'PASS: T25 ghi album của chính mình vẫn được (đã ROLLBACK, dữ liệu không đổi)';
+ELSE PRINT N'FAIL: T25 ghi album của chính mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10)) + N', trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T26: UPDATE album công khai của người khác (đọc được nhờ FILTER) phải bị chặn 33504, title không đổi
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO arc.Albums (OwnerUserId, Title, IsPublic) VALUES (@oid, N'Test17 album công khai', 1);
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE arc.Albums SET Title = N'Test17 bị sửa' WHERE Title = N'Test17 album công khai';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.Albums WHERE Title = N'Test17 album công khai');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T26 BLOCK BEFORE UPDATE chặn sửa album công khai của người khác (33504)';
+ELSE PRINT N'FAIL: T26 BLOCK BEFORE UPDATE, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; title gốc còn=' + CAST(@e AS NVARCHAR(10));
+
+-- T27: DELETE album công khai của người khác phải bị chặn 33504, dòng còn nguyên
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO arc.Albums (OwnerUserId, Title, IsPublic) VALUES (@oid, N'Test17 album công khai', 1);
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    DELETE FROM arc.Albums WHERE Title = N'Test17 album công khai';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.Albums WHERE Title = N'Test17 album công khai');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T27 BLOCK BEFORE DELETE chặn xóa album công khai của người khác (33504)';
+ELSE PRINT N'FAIL: T27 BLOCK BEFORE DELETE, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng còn=' + CAST(@e AS NVARCHAR(10));
+
+-- T28: chủ album đổi OwnerUserId sang người khác (chuyển album đi) phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO arc.Albums (OwnerUserId, Title) VALUES (6, N'Test17 album chuyển chủ');
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE arc.Albums SET OwnerUserId = @oid WHERE Title = N'Test17 album chuyển chủ';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM arc.Albums WHERE Title = N'Test17 album chuyển chủ' AND OwnerUserId = 6);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T28 BLOCK AFTER UPDATE chặn đổi chủ album sang người khác (33504)';
+ELSE PRINT N'FAIL: T28 BLOCK AFTER UPDATE, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; chủ vẫn là 6=' + CAST(@e AS NVARCHAR(10));
+
+-- Dọn
+EXEC sp_set_session_context N'UserId', NULL;
+DROP USER u_blk;
+
 DROP USER u_sys;
