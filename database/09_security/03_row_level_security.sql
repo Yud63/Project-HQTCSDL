@@ -24,6 +24,7 @@ DROP SECURITY POLICY IF EXISTS sec.pol_UserPreferences;
 DROP SECURITY POLICY IF EXISTS sec.pol_AIChatLogs;
 DROP SECURITY POLICY IF EXISTS sec.pol_RecommendationLogs;
 DROP SECURITY POLICY IF EXISTS sec.pol_LabApprovals;
+DROP SECURITY POLICY IF EXISTS sec.pol_Articles;
 GO
 
 IF SCHEMA_ID(N'sec') IS NULL EXEC (N'CREATE SCHEMA sec AUTHORIZATION dbo;');
@@ -102,6 +103,23 @@ RETURN SELECT 1 AS Allowed
 WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1;
 GO
 
+-- Bài viết (đọc, BR-COM-04): bài Published ai cũng thấy; tác giả thấy thêm bài Draft và Hidden của mình; Admin thấy tất cả
+CREATE OR ALTER FUNCTION sec.fn_ArticleAccess(@AuthorId INT, @Status NVARCHAR(9))
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
+   OR @Status = N'Published'
+   OR @AuthorId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
+GO
+
+-- Bài viết (ghi): chỉ tác giả hoặc Admin. Bài Published của người khác chỉ cho đọc, không cho sửa/xóa
+CREATE OR ALTER FUNCTION sec.fn_ArticleWriteAccess(@AuthorId INT)
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
+   OR @AuthorId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
+GO
+
 -- Chặng giao: đối tác được giao, hoặc khách sở hữu địa chỉ của chặng (BR-DLV-11)
 CREATE OR ALTER FUNCTION sec.fn_DeliveryAccess(@DeliveryPartnerId INT, @CustomerAddressId INT)
 RETURNS TABLE WITH SCHEMABINDING AS
@@ -166,6 +184,13 @@ CREATE SECURITY POLICY sec.pol_LabApprovals
     ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals AFTER UPDATE,
     ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals BEFORE UPDATE,
     ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals BEFORE DELETE
+    WITH (STATE = ON);
+CREATE SECURITY POLICY sec.pol_Articles
+    ADD FILTER PREDICATE sec.fn_ArticleAccess(AuthorId, Status) ON com.Articles,
+    ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles BEFORE DELETE
     WITH (STATE = ON);
 GO
 
