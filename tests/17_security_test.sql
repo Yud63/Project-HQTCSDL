@@ -387,6 +387,220 @@ IF @@TRANCOUNT > 0 ROLLBACK;
 IF @err = 33504 AND @e = 1 PRINT N'PASS: T28 BLOCK AFTER UPDATE chặn đổi chủ album sang người khác (33504)';
 ELSE PRINT N'FAIL: T28 BLOCK AFTER UPDATE, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; chủ vẫn là 6=' + CAST(@e AS NVARCHAR(10));
 
+
+-- ===== BLOCK predicate 3 bảng AI (Việc 4C.2b) =====
+-- Lưu ý: BEFORE UPDATE/DELETE không chạm tới được vì FILTER (cùng fn_OwnerAccess) đã ẩn dòng người khác, nên chứng minh bằng AFTER INSERT/AFTER UPDATE
+GRANT SELECT, INSERT, UPDATE, DELETE ON ai.UserPreferences   TO u_blk;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ai.AIChatLogs        TO u_blk;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ai.RecommendationLogs TO u_blk;
+
+-- T29: ai.UserPreferences INSERT dòng của người khác phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+DELETE FROM ai.UserPreferences WHERE UserId IN (6, @oid);
+SET @x = (SELECT COUNT(*) FROM ai.UserPreferences);
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.UserPreferences (UserId) VALUES (@oid);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @g = (SELECT COUNT(*) FROM ai.UserPreferences);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @g = @x PRINT N'PASS: T29 BLOCK AFTER INSERT chặn ghi ai.UserPreferences của người khác (33504)';
+ELSE PRINT N'FAIL: T29 ai.UserPreferences INSERT người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T30: ai.UserPreferences INSERT dòng của mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+DELETE FROM ai.UserPreferences WHERE UserId IN (6, @oid);
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.UserPreferences (UserId) VALUES (6);
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.UserPreferences WHERE UserId = 6);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T30 ghi ai.UserPreferences của chính mình vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T30 ai.UserPreferences INSERT của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T31: ai.UserPreferences đổi UserId sang người khác phải bị chặn 33504 (AFTER UPDATE)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+DELETE FROM ai.UserPreferences WHERE UserId IN (6, @oid);
+INSERT INTO ai.UserPreferences (UserId) VALUES (6);
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE ai.UserPreferences SET UserId = @oid WHERE UserId = 6;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.UserPreferences WHERE UserId = 6);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T31 BLOCK AFTER UPDATE chặn đổi chủ ai.UserPreferences (33504)';
+ELSE PRINT N'FAIL: T31 ai.UserPreferences đổi UserId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng của 6 còn=' + CAST(@e AS NVARCHAR(10));
+
+-- T32: ai.AIChatLogs INSERT dòng của người khác phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM ai.AIChatLogs);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message) VALUES (NEWID(), @oid, N'User', N'Test17 log người khác');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM ai.AIChatLogs);
+IF @err = 33504 AND @g = @x PRINT N'PASS: T32 BLOCK AFTER INSERT chặn ghi ai.AIChatLogs của người khác (33504)';
+ELSE PRINT N'FAIL: T32 ai.AIChatLogs INSERT người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T33: ai.AIChatLogs INSERT dòng của mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM ai.AIChatLogs);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message) VALUES (NEWID(), 6, N'User', N'Test17 log của mình');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.AIChatLogs WHERE Message = N'Test17 log của mình');
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM ai.AIChatLogs);
+IF @err = 0 AND @e = 1 AND @g = @x PRINT N'PASS: T33 ghi ai.AIChatLogs của chính mình vẫn được (đã ROLLBACK, dữ liệu không đổi)';
+ELSE PRINT N'FAIL: T33 ai.AIChatLogs INSERT của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10)) + N', trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T34: ai.AIChatLogs đổi UserId sang người khác phải bị chặn 33504 (AFTER UPDATE)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message) VALUES (NEWID(), 6, N'User', N'Test17 log chuyển chủ');
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE ai.AIChatLogs SET UserId = @oid WHERE Message = N'Test17 log chuyển chủ';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.AIChatLogs WHERE Message = N'Test17 log chuyển chủ' AND UserId = 6);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T34 BLOCK AFTER UPDATE chặn đổi chủ ai.AIChatLogs (33504)';
+ELSE PRINT N'FAIL: T34 ai.AIChatLogs đổi UserId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; chủ vẫn là 6=' + CAST(@e AS NVARCHAR(10));
+
+-- T35: ai.AIChatLogs UPDATE Feedback dòng Assistant của mình phải thành công (đường ghi trực tiếp còn lại, BR-AI-02)
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message, ModelName) VALUES (NEWID(), 6, N'Assistant', N'Test17 trả lời của mình', N'test17-model');
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE ai.AIChatLogs SET Feedback = N'Helpful' WHERE Message = N'Test17 trả lời của mình';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.AIChatLogs WHERE Message = N'Test17 trả lời của mình' AND Feedback = N'Helpful');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 1 AND @e = 1 PRINT N'PASS: T35 chủ dòng vẫn UPDATE được Feedback ai.AIChatLogs (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T35 ai.AIChatLogs UPDATE Feedback của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T36: ai.AIChatLogs UPDATE Feedback dòng của người khác: FILTER ẩn dòng nên 0 dòng bị sửa, Feedback không đổi
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message, ModelName) VALUES (NEWID(), @oid, N'Assistant', N'Test17 trả lời người khác', N'test17-model');
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE ai.AIChatLogs SET Feedback = N'NotHelpful' WHERE Message = N'Test17 trả lời người khác';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.AIChatLogs WHERE Message = N'Test17 trả lời người khác' AND Feedback IS NULL);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 0 AND @e = 1 PRINT N'PASS: T36 UPDATE Feedback dòng của người khác ảnh hưởng 0 dòng, Feedback không đổi';
+ELSE PRINT N'FAIL: T36 ai.AIChatLogs UPDATE Feedback người khác, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', Feedback còn NULL=' + CAST(@e AS NVARCHAR(10));
+
+-- T37: ai.RecommendationLogs INSERT dòng của người khác phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM ai.RecommendationLogs);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.RecommendationLogs (UserId, RecommendationType, ItemId, [Rank], Score, ModelVersion)
+    VALUES (@oid, N'Lab', 1, 1, 0.5, N'test17');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM ai.RecommendationLogs);
+IF @err = 33504 AND @g = @x PRINT N'PASS: T37 BLOCK AFTER INSERT chặn ghi ai.RecommendationLogs của người khác (33504)';
+ELSE PRINT N'FAIL: T37 ai.RecommendationLogs INSERT người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T38: ai.RecommendationLogs INSERT dòng của mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+SET @x = (SELECT COUNT(*) FROM ai.RecommendationLogs);
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO ai.RecommendationLogs (UserId, RecommendationType, ItemId, [Rank], Score, ModelVersion)
+    VALUES (6, N'Lab', 1, 1, 0.5, N'test17');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.RecommendationLogs WHERE ModelVersion = N'test17');
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM ai.RecommendationLogs);
+IF @err = 0 AND @e = 1 AND @g = @x PRINT N'PASS: T38 ghi ai.RecommendationLogs của chính mình vẫn được (đã ROLLBACK, dữ liệu không đổi)';
+ELSE PRINT N'FAIL: T38 ai.RecommendationLogs INSERT của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10)) + N', trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T39: ai.RecommendationLogs đổi UserId sang người khác phải bị chặn 33504 (AFTER UPDATE)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO ai.RecommendationLogs (UserId, RecommendationType, ItemId, [Rank], Score, ModelVersion)
+VALUES (6, N'Lab', 1, 1, 0.5, N'test17chuyen');
+EXEC sp_set_session_context N'UserId', 6;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE ai.RecommendationLogs SET UserId = @oid WHERE ModelVersion = N'test17chuyen';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM ai.RecommendationLogs WHERE ModelVersion = N'test17chuyen' AND UserId = 6);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T39 BLOCK AFTER UPDATE chặn đổi chủ ai.RecommendationLogs (33504)';
+ELSE PRINT N'FAIL: T39 ai.RecommendationLogs đổi UserId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; chủ vẫn là 6=' + CAST(@e AS NVARCHAR(10));
+
 -- Dọn
 EXEC sp_set_session_context N'UserId', NULL;
 DROP USER u_blk;
