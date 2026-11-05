@@ -76,6 +76,14 @@ WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
    OR @OwnerUserId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
 GO
 
+-- Album (ghi): chỉ chủ album. Khác fn_AlbumAccess vì album công khai chỉ cho người khác ĐỌC, không cho sửa/xóa
+CREATE OR ALTER FUNCTION sec.fn_AlbumWriteAccess(@OwnerUserId INT)
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
+   OR @OwnerUserId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
+GO
+
 -- Chặng giao: đối tác được giao, hoặc khách sở hữu địa chỉ của chặng (BR-DLV-11)
 CREATE OR ALTER FUNCTION sec.fn_DeliveryAccess(@DeliveryPartnerId INT, @CustomerAddressId INT)
 RETURNS TABLE WITH SCHEMABINDING AS
@@ -89,7 +97,7 @@ WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
                 AND a.UserId = CONVERT(INT, SESSION_CONTEXT(N'UserId')));
 GO
 
--- ===== 2. Security policies (chỉ FILTER, chưa BLOCK để procedure ghi hộ người khác vẫn chạy) =====
+-- ===== 2. Security policies (FILTER cả 8 bảng; BLOCK thêm dần ở Việc 4C, bảng nào procedure ghi hộ người khác thì chưa BLOCK) =====
 CREATE SECURITY POLICY sec.pol_Orders
     ADD FILTER PREDICATE sec.fn_OrderAccess(OrderId, CustomerId, LabId) ON ord.Orders
     WITH (STATE = ON);
@@ -97,7 +105,11 @@ CREATE SECURITY POLICY sec.pol_ScanFiles
     ADD FILTER PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_Albums
-    ADD FILTER PREDICATE sec.fn_AlbumAccess(OwnerUserId, IsPublic) ON arc.Albums
+    ADD FILTER PREDICATE sec.fn_AlbumAccess(OwnerUserId, IsPublic) ON arc.Albums,
+    ADD BLOCK PREDICATE sec.fn_AlbumWriteAccess(OwnerUserId) ON arc.Albums AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_AlbumWriteAccess(OwnerUserId) ON arc.Albums AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_AlbumWriteAccess(OwnerUserId) ON arc.Albums BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_AlbumWriteAccess(OwnerUserId) ON arc.Albums BEFORE DELETE
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_DeliveryRequests
     ADD FILTER PREDICATE sec.fn_DeliveryAccess(DeliveryPartnerId, CustomerAddressId) ON dlv.DeliveryRequests
