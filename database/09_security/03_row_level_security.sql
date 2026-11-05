@@ -23,6 +23,7 @@ DROP SECURITY POLICY IF EXISTS sec.pol_Notifications;
 DROP SECURITY POLICY IF EXISTS sec.pol_UserPreferences;
 DROP SECURITY POLICY IF EXISTS sec.pol_AIChatLogs;
 DROP SECURITY POLICY IF EXISTS sec.pol_RecommendationLogs;
+DROP SECURITY POLICY IF EXISTS sec.pol_LabApprovals;
 GO
 
 IF SCHEMA_ID(N'sec') IS NULL EXEC (N'CREATE SCHEMA sec AUTHORIZATION dbo;');
@@ -84,6 +85,23 @@ WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
    OR @OwnerUserId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
 GO
 
+-- Dữ liệu riêng của lab (LabApprovals): chủ lab của dòng đó đọc được, Admin xem tất cả
+CREATE OR ALTER FUNCTION sec.fn_LabPrivateAccess(@LabId INT)
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
+   OR EXISTS (SELECT 1 FROM lab.FilmLabs l
+              WHERE l.LabId = @LabId
+                AND l.OwnerUserId = CONVERT(INT, SESSION_CONTEXT(N'UserId')));
+GO
+
+-- Quyết định duyệt lab (ghi): chỉ Admin. Chủ lab chỉ đọc quyết định của lab mình, không được ghi
+CREATE OR ALTER FUNCTION sec.fn_LabApprovalWriteAccess(@LabId INT)
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1;
+GO
+
 -- Chặng giao: đối tác được giao, hoặc khách sở hữu địa chỉ của chặng (BR-DLV-11)
 CREATE OR ALTER FUNCTION sec.fn_DeliveryAccess(@DeliveryPartnerId INT, @CustomerAddressId INT)
 RETURNS TABLE WITH SCHEMABINDING AS
@@ -141,6 +159,13 @@ CREATE SECURITY POLICY sec.pol_RecommendationLogs
     ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs AFTER UPDATE,
     ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs BEFORE UPDATE,
     ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs BEFORE DELETE
+    WITH (STATE = ON);
+CREATE SECURITY POLICY sec.pol_LabApprovals
+    ADD FILTER PREDICATE sec.fn_LabPrivateAccess(LabId) ON lab.LabApprovals,
+    ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_LabApprovalWriteAccess(LabId) ON lab.LabApprovals BEFORE DELETE
     WITH (STATE = ON);
 GO
 

@@ -385,6 +385,7 @@ BEGIN
     SET NOCOUNT ON;
     SET XACT_ABORT ON;
     BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @OwnerUserId;  -- RLS lab.LabApprovals đọc theo UserId này
         -- Result set 1: lab của chủ, mọi trạng thái duyệt, kèm quyết định gần nhất (lý do từ chối/đình chỉ)
         SELECT l.LabId, l.LabName, l.Description, l.AddressLine, l.Ward, l.District, l.City,
                l.Location.Lat AS Latitude, l.Location.Long AS Longitude,
