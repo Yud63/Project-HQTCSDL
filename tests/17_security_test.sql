@@ -707,6 +707,143 @@ IF @@TRANCOUNT > 0 ROLLBACK;
 IF @err = 0 AND @c = 1 AND @e = 1 PRINT N'PASS: T44 chủ lab của đơn UPDATE điểm ảnh scan vẫn được (đã ROLLBACK)';
 ELSE PRINT N'FAIL: T44 arc.ScanFiles UPDATE chủ lab, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
 
+
+-- ===== RLS lab.LabApprovals (Việc 4D.1b) =====
+GRANT SELECT, INSERT, UPDATE, DELETE ON lab.LabApprovals TO u_blk;
+IF USER_ID(N'u_labs2') IS NOT NULL DROP USER u_labs2;
+IF USER_ID(N'u_adm2')  IS NOT NULL DROP USER u_adm2;
+CREATE USER u_labs2 WITHOUT LOGIN;  ALTER ROLE role_LabOwner ADD MEMBER u_labs2;
+CREATE USER u_adm2  WITHOUT LOGIN;  ALTER ROLE role_Admin    ADD MEMBER u_adm2;
+GRANT SELECT, INSERT ON lab.LabApprovals TO u_adm2;
+DECLARE @lab1 INT, @own1 INT, @lab2 INT, @own2 INT, @adm INT;
+SELECT TOP 1 @lab1 = LabId, @own1 = OwnerUserId FROM lab.FilmLabs WHERE IsDeleted = 0 ORDER BY LabId;
+SELECT TOP 1 @lab2 = LabId, @own2 = OwnerUserId FROM lab.FilmLabs WHERE IsDeleted = 0 AND OwnerUserId <> @own1 ORDER BY LabId;
+SET @adm = (SELECT TOP 1 ur.UserId FROM iam.UserRoles ur JOIN iam.Roles r ON r.RoleId = ur.RoleId WHERE r.RoleCode = N'Admin' ORDER BY ur.UserId);
+
+-- T45: role_LabOwner thật gọi lab.sp_GetMyLabs phải chạy được dưới FILTER và procedure phải đặt UserId session = chủ lab (nên LastDecision không bị mất)
+SET @err = 0; SET @msg = NULL; SET @g = NULL;
+BEGIN TRAN;
+INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Rejected', N'Test17 lý do');
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_labs2';
+BEGIN TRY
+    EXEC lab.sp_GetMyLabs @own1;
+    SET @g = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @g = @own1 PRINT N'PASS: T45 role_LabOwner gọi lab.sp_GetMyLabs chạy được, procedure đặt UserId session = chủ lab';
+ELSE PRINT N'FAIL: T45 role_LabOwner gọi lab.sp_GetMyLabs, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; session UserId=' + ISNULL(CAST(@g AS NVARCHAR(10)), N'NULL') + N', mong đợi=' + ISNULL(CAST(@own1 AS NVARCHAR(10)), N'NULL');
+
+-- T46: chủ lab đọc được quyết định duyệt của lab mình (FILTER cho qua nhánh chủ lab)
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Rejected', N'Test17 lý do');
+EXEC sp_set_session_context N'UserId', @own1;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE LabId = @lab1 AND Reason = N'Test17 lý do');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T46 chủ lab đọc được quyết định duyệt của lab mình';
+ELSE PRINT N'FAIL: T46 chủ lab đọc LabApprovals, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T47: chủ lab khác không thấy quyết định duyệt của lab này
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Rejected', N'Test17 lý do');
+EXEC sp_set_session_context N'UserId', @own2;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE LabId = @lab1 AND Reason = N'Test17 lý do');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @own2 IS NOT NULL AND @e = 0 PRINT N'PASS: T47 chủ lab khác không thấy quyết định duyệt của lab này';
+ELSE PRINT N'FAIL: T47 chủ lab khác đọc LabApprovals, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL') + N', chủ lab thứ hai=' + ISNULL(CAST(@own2 AS NVARCHAR(10)), N'NULL');
+
+-- T48: Admin (role_Admin) đọc được mọi quyết định duyệt
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Rejected', N'Test17 lý do');
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_adm2';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE LabId = @lab1 AND Reason = N'Test17 lý do');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T48 Admin đọc được quyết định duyệt';
+ELSE PRINT N'FAIL: T48 Admin đọc LabApprovals, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T49: chủ lab INSERT trực tiếp quyết định duyệt phải bị chặn 33504 (chỉ Admin được ghi)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', @own1;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @own1, N'Approved', N'Test17 chủ lab tự ghi');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE Reason = N'Test17 chủ lab tự ghi');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 0 PRINT N'PASS: T49 BLOCK AFTER INSERT chặn chủ lab tự ghi quyết định duyệt (33504)';
+ELSE PRINT N'FAIL: T49 chủ lab INSERT LabApprovals, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng đã thêm=' + CAST(@e AS NVARCHAR(10));
+
+-- T50: Admin INSERT quyết định duyệt phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_adm2';
+BEGIN TRY
+    INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Approved', N'Test17 admin ghi');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE Reason = N'Test17 admin ghi');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T50 Admin ghi quyết định duyệt vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T50 Admin INSERT LabApprovals, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T51: chủ lab UPDATE lý do của quyết định duyệt lab mình phải bị chặn 33504 (đọc được nhờ FILTER, ghi bị BLOCK)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO lab.LabApprovals (LabId, ReviewedBy, Decision, Reason) VALUES (@lab1, @adm, N'Rejected', N'Test17 lý do');
+EXEC sp_set_session_context N'UserId', @own1;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE lab.LabApprovals SET Reason = N'Test17 bị sửa' WHERE LabId = @lab1 AND Reason = N'Test17 lý do';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM lab.LabApprovals WHERE LabId = @lab1 AND Reason = N'Test17 lý do');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T51 BLOCK BEFORE UPDATE chặn chủ lab sửa quyết định duyệt (33504)';
+ELSE PRINT N'FAIL: T51 chủ lab UPDATE LabApprovals, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng gốc còn=' + CAST(@e AS NVARCHAR(10));
+
+DROP USER u_labs2;
+DROP USER u_adm2;
+
 -- Dọn
 EXEC sp_set_session_context N'UserId', NULL;
 DROP USER u_blk;
