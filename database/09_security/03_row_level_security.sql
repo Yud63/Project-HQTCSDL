@@ -102,7 +102,11 @@ CREATE SECURITY POLICY sec.pol_Orders
     ADD FILTER PREDICATE sec.fn_OrderAccess(OrderId, CustomerId, LabId) ON ord.Orders
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_ScanFiles
-    ADD FILTER PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles
+    ADD FILTER PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles,
+    ADD BLOCK PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_ScanAccess(OwnerUserId, OrderId) ON arc.ScanFiles BEFORE DELETE
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_Albums
     ADD FILTER PREDICATE sec.fn_AlbumAccess(OwnerUserId, IsPublic) ON arc.Albums,
