@@ -269,10 +269,12 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER: role_System (job hệ thống) không qua được RLS của ai.AIChatLogs, nếu không DELETE xóa 0 dòng mà không báo lỗi.
 CREATE OR ALTER PROCEDURE ai.sp_PurgeOldLogs
     @ActorUserId   INT = NULL,
     @RetentionDays INT = 180,
     @DeletedCount  INT = NULL OUTPUT
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;

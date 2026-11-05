@@ -20,7 +20,7 @@ Chạy luồng chính dưới role thật bằng `EXECUTE AS USER` (user không 
 | role_LabOwner | Xác nhận đơn, đổi stage, upload scan, hoàn tất |
 | role_Admin | Duyệt lab, khóa/mở user, không SELECT trực tiếp `iam.Users` |
 
-Lưu ý: role_System (login `fl_system`) là job bảo trì marketplace, chỉ EXECUTE `mkt.sp_RunMaintenance`. Phần này kiểm ở `tests/17_security_test.sql` (T17-T22), `demo.sql` không chạy.
+Lưu ý: role_System (login `fl_system`) là job hệ thống, chỉ EXECUTE `mkt.sp_RunMaintenance` và `ai.sp_PurgeOldLogs`. Phần này kiểm ở `tests/17_security_test.sql` (T17-T23), `demo.sql` không chạy.
 
 Cách chạy (từ thư mục gốc repo, mặc định `@Commit = 0` — ROLLBACK, chạy lại thoải mái):
 

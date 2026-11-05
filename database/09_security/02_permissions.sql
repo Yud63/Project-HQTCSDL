@@ -83,8 +83,9 @@ GRANT EXECUTE ON SCHEMA::com TO role_Admin;
 GRANT EXECUTE ON SCHEMA::ai  TO role_Admin;
 
 
--- ===== 5b. GRANT EXECUTE: role_System (job hệ thống định kỳ; chỉ procedure bảo trì marketplace) =====
+-- ===== 5b. GRANT EXECUTE: role_System (job hệ thống định kỳ; chỉ bảo trì marketplace và dọn log AI) =====
 GRANT EXECUTE ON mkt.sp_RunMaintenance TO role_System;
+GRANT EXECUTE ON ai.sp_PurgeOldLogs   TO role_System; -- BR-AI-04
 
 -- ===== 6. DENY EXECUTE procedure nội bộ (chỉ được gọi qua procedure/trigger khác nhờ ownership chaining) =====
 DENY EXECUTE ON audit.sp_WriteAudit        TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin, role_System; -- BR-AUD-02

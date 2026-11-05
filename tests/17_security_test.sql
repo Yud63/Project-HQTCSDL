@@ -1,6 +1,6 @@
 /* ============================================================
    File    : tests/17_security_test.sql
-   Purpose : Kiểm tra GRANT/DENY, RLS, Data Masking cho 5 role (Đợt 7). Mong đợi 22 PASS.
+   Purpose : Kiểm tra GRANT/DENY, RLS, Data Masking cho 5 role (Đợt 7). Mong đợi 23 PASS.
    Cách chạy (trong thư mục tests, KHÔNG dùng -b):
      sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -i 17_security_test.sql | find /c "PASS:"
    ============================================================ */
@@ -233,8 +233,8 @@ IF @g = 1 PRINT N'PASS: T18 role_System EXECUTE được mkt.sp_RunMaintenance';
 ELSE PRINT N'FAIL: T18 role_System EXECUTE được mkt.sp_RunMaintenance';
 IF @e = 0 PRINT N'PASS: T19 role_System không có quyền 4 procedure nội bộ';
 ELSE PRINT N'FAIL: T19 role_System không có quyền 4 procedure nội bộ';
-IF @b = 0 PRINT N'PASS: T20 role_System chưa có quyền ai.sp_PurgeOldLogs (cấp ở Việc 4)';
-ELSE PRINT N'FAIL: T20 role_System chưa có quyền ai.sp_PurgeOldLogs (cấp ở Việc 4)';
+IF @b = 1 PRINT N'PASS: T20 role_System EXECUTE được ai.sp_PurgeOldLogs';
+ELSE PRINT N'FAIL: T20 role_System EXECUTE được ai.sp_PurgeOldLogs';
 
 -- T21: gọi thật mkt.sp_RunMaintenance dưới role_System, bọc ROLLBACK, dữ liệu không đổi
 SET @x = (SELECT COUNT(*) FROM mkt.Listings WHERE Status = N'Closed')
@@ -268,5 +268,25 @@ END CATCH
 IF USER_NAME() <> N'dbo' REVERT;
 IF @err = 229 PRINT N'PASS: T22 role_System gọi ord.sp_CreateOrder bị lỗi 229';
 ELSE PRINT N'FAIL: T22 role_System gọi ord.sp_CreateOrder, mong đợi 229, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi');
+
+-- T23: role_System gọi thật ai.sp_PurgeOldLogs, xóa được log quá 180 ngày (không còn xóa 0 dòng do RLS), bọc ROLLBACK
+SET @x = (SELECT COUNT(*) FROM ai.AIChatLogs);
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO ai.AIChatLogs (SessionId, UserId, [Role], Message, CreatedAt)
+VALUES (NEWID(), 6, N'User', N'Test17 log cũ', DATEADD(DAY, -200, SYSUTCDATETIME()));
+EXECUTE AS USER = N'u_sys';
+BEGIN TRY
+    EXEC ai.sp_PurgeOldLogs @DeletedCount = @c OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = CASE WHEN EXISTS (SELECT 1 FROM ai.AIChatLogs WHERE Message = N'Test17 log cũ') THEN 1 ELSE 0 END;
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM ai.AIChatLogs);
+IF @err = 0 AND @c >= 1 AND @e = 0 AND @g = @x PRINT N'PASS: T23 role_System gọi ai.sp_PurgeOldLogs xóa log cũ (đã ROLLBACK, dữ liệu không đổi)';
+ELSE PRINT N'FAIL: T23 role_System gọi ai.sp_PurgeOldLogs, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; đã xóa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', còn dòng cũ=' + CAST(@e AS NVARCHAR(10)) + N', trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
 
 DROP USER u_sys;
