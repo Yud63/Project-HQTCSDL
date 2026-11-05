@@ -97,7 +97,7 @@ WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
                 AND a.UserId = CONVERT(INT, SESSION_CONTEXT(N'UserId')));
 GO
 
--- ===== 2. Security policies (FILTER cả 8 bảng; BLOCK thêm dần ở Việc 4C, bảng nào procedure ghi hộ người khác thì chưa BLOCK) =====
+-- ===== 2. Security policies (FILTER cả 8 bảng; BLOCK cho Albums, ScanFiles, UserPreferences, AIChatLogs, RecommendationLogs; Orders, Notifications, DeliveryRequests chỉ FILTER vì procedure ghi hộ người khác) =====
 CREATE SECURITY POLICY sec.pol_Orders
     ADD FILTER PREDICATE sec.fn_OrderAccess(OrderId, CustomerId, LabId) ON ord.Orders
     WITH (STATE = ON);
