@@ -844,6 +844,207 @@ ELSE PRINT N'FAIL: T51 chủ lab UPDATE LabApprovals, mong đợi 33504, nhận 
 DROP USER u_labs2;
 DROP USER u_adm2;
 
+
+-- ===== RLS com.Articles (Việc 4D.2b) =====
+GRANT SELECT, INSERT, UPDATE, DELETE ON com.Articles TO u_blk;
+IF USER_ID(N'u_adm3') IS NOT NULL DROP USER u_adm3;
+CREATE USER u_adm3 WITHOUT LOGIN;  ALTER ROLE role_Admin ADD MEMBER u_adm3;
+GRANT SELECT ON com.Articles TO u_adm3;
+DECLARE @au INT, @ot INT;
+SET @au = (SELECT TOP 1 UserId FROM iam.Users WHERE IsDeleted = 0 ORDER BY UserId);
+SET @ot = (SELECT TOP 1 UserId FROM iam.Users WHERE IsDeleted = 0 AND UserId <> @au ORDER BY UserId);
+
+-- T52: INSERT bài của người khác (AuthorId <> UserId trong session) phải bị chặn 33504
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', @au;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status)
+    VALUES (@ot, N'Experience', N'Test17 bài người khác', N'test17-other', N'Nội dung', N'Draft');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-other');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 0 PRINT N'PASS: T52 BLOCK AFTER INSERT chặn ghi bài viết của người khác (33504)';
+ELSE PRINT N'FAIL: T52 com.Articles INSERT người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng đã thêm=' + CAST(@e AS NVARCHAR(10));
+
+-- T53: INSERT bài của chính mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXEC sp_set_session_context N'UserId', @au;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status)
+    VALUES (@au, N'Experience', N'Test17 bài của mình', N'test17-own', N'Nội dung', N'Draft');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-own');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T53 ghi bài viết của chính mình vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T53 com.Articles INSERT của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + CAST(@e AS NVARCHAR(10));
+
+-- T54: người khác đọc được bài Published của tác giả (FILTER cho qua bài Published)
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt)
+VALUES (@au, N'Experience', N'Test17 bài công khai', N'test17-pub', N'Nội dung', N'Published', SYSUTCDATETIME());
+EXEC sp_set_session_context N'UserId', @ot;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-pub');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T54 người khác đọc được bài Published';
+ELSE PRINT N'FAIL: T54 đọc bài Published, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T55: người khác không thấy bài Draft và Hidden của tác giả
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status)
+VALUES (@au, N'Experience', N'Test17 bài nháp', N'test17-draft', N'Nội dung', N'Draft');
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt, ModerationReason)
+VALUES (@au, N'Experience', N'Test17 bài bị ẩn', N'test17-hidden', N'Nội dung', N'Hidden', SYSUTCDATETIME(), N'Test17 lý do ẩn');
+EXEC sp_set_session_context N'UserId', @ot;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug IN (N'test17-draft', N'test17-hidden'));
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 0 PRINT N'PASS: T55 người khác không thấy bài Draft và Hidden của tác giả';
+ELSE PRINT N'FAIL: T55 đọc bài Draft/Hidden của người khác, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T56: tác giả thấy bài Draft và Hidden của chính mình
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status)
+VALUES (@au, N'Experience', N'Test17 bài nháp', N'test17-draft', N'Nội dung', N'Draft');
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt, ModerationReason)
+VALUES (@au, N'Experience', N'Test17 bài bị ẩn', N'test17-hidden', N'Nội dung', N'Hidden', SYSUTCDATETIME(), N'Test17 lý do ẩn');
+EXEC sp_set_session_context N'UserId', @au;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug IN (N'test17-draft', N'test17-hidden'));
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 2 PRINT N'PASS: T56 tác giả thấy bài Draft và Hidden của mình';
+ELSE PRINT N'FAIL: T56 tác giả đọc bài Draft/Hidden của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T57: Admin (role_Admin) thấy bài Draft của người khác
+SET @err = 0; SET @msg = NULL; SET @e = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status)
+VALUES (@au, N'Experience', N'Test17 bài nháp', N'test17-draft', N'Nội dung', N'Draft');
+EXEC sp_set_session_context N'UserId', NULL;
+EXECUTE AS USER = N'u_adm3';
+BEGIN TRY
+    SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-draft');
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @e = 1 PRINT N'PASS: T57 Admin thấy bài Draft của người khác';
+ELSE PRINT N'FAIL: T57 Admin đọc bài Draft, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; thấy=' + ISNULL(CAST(@e AS NVARCHAR(10)), N'NULL');
+
+-- T58: người khác UPDATE bài Published của tác giả (đọc được nhờ FILTER) phải bị chặn 33504, tiêu đề không đổi
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt)
+VALUES (@au, N'Experience', N'Test17 bài công khai', N'test17-pub', N'Nội dung', N'Published', SYSUTCDATETIME());
+EXEC sp_set_session_context N'UserId', @ot;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE com.Articles SET Title = N'Test17 bị sửa' WHERE Slug = N'test17-pub';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-pub' AND Title = N'Test17 bài công khai');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T58 BLOCK BEFORE UPDATE chặn người khác sửa bài Published (33504)';
+ELSE PRINT N'FAIL: T58 com.Articles UPDATE người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; tiêu đề gốc còn=' + CAST(@e AS NVARCHAR(10));
+
+-- T59: người khác DELETE bài Published của tác giả phải bị chặn 33504, dòng còn nguyên
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt)
+VALUES (@au, N'Experience', N'Test17 bài công khai', N'test17-pub', N'Nội dung', N'Published', SYSUTCDATETIME());
+EXEC sp_set_session_context N'UserId', @ot;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    DELETE FROM com.Articles WHERE Slug = N'test17-pub';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-pub');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T59 BLOCK BEFORE DELETE chặn người khác xóa bài Published (33504)';
+ELSE PRINT N'FAIL: T59 com.Articles DELETE người khác, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng còn=' + CAST(@e AS NVARCHAR(10));
+
+-- T60: tác giả đổi AuthorId bài của mình sang người khác phải bị chặn 33504 (AFTER UPDATE)
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt)
+VALUES (@au, N'Experience', N'Test17 bài công khai', N'test17-pub', N'Nội dung', N'Published', SYSUTCDATETIME());
+EXEC sp_set_session_context N'UserId', @au;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE com.Articles SET AuthorId = @ot WHERE Slug = N'test17-pub';
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-pub' AND AuthorId = @au);
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 33504 AND @e = 1 PRINT N'PASS: T60 BLOCK AFTER UPDATE chặn đổi tác giả sang người khác (33504)';
+ELSE PRINT N'FAIL: T60 com.Articles đổi AuthorId, mong đợi 33504, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; tác giả vẫn là mình=' + CAST(@e AS NVARCHAR(10));
+
+-- T61: tác giả UPDATE tiêu đề bài của mình phải thành công (đối chứng, bọc ROLLBACK)
+SET @err = 0; SET @msg = NULL; SET @c = NULL;
+BEGIN TRAN;
+INSERT INTO com.Articles (AuthorId, ArticleType, Title, Slug, Body, Status, PublishedAt)
+VALUES (@au, N'Experience', N'Test17 bài công khai', N'test17-pub', N'Nội dung', N'Published', SYSUTCDATETIME());
+EXEC sp_set_session_context N'UserId', @au;
+EXECUTE AS USER = N'u_blk';
+BEGIN TRY
+    UPDATE com.Articles SET Title = N'Test17 đã sửa' WHERE Slug = N'test17-pub';
+    SET @c = @@ROWCOUNT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+SET @e = (SELECT COUNT(*) FROM com.Articles WHERE Slug = N'test17-pub' AND Title = N'Test17 đã sửa');
+IF @@TRANCOUNT > 0 ROLLBACK;
+IF @err = 0 AND @c = 1 AND @e = 1 PRINT N'PASS: T61 tác giả sửa bài viết của chính mình vẫn được (đã ROLLBACK)';
+ELSE PRINT N'FAIL: T61 com.Articles UPDATE của mình, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; dòng bị sửa=' + ISNULL(CAST(@c AS NVARCHAR(10)), N'NULL') + N', thấy=' + CAST(@e AS NVARCHAR(10));
+
+DROP USER u_adm3;
+
 -- Dọn
 EXEC sp_set_session_context N'UserId', NULL;
 DROP USER u_blk;
