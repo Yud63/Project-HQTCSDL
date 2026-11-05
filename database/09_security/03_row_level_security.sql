@@ -118,13 +118,25 @@ CREATE SECURITY POLICY sec.pol_Notifications
     ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON arc.Notifications
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_UserPreferences
-    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences
+    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.UserPreferences BEFORE DELETE
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_AIChatLogs
-    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs
+    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.AIChatLogs BEFORE DELETE
     WITH (STATE = ON);
 CREATE SECURITY POLICY sec.pol_RecommendationLogs
-    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs
+    ADD FILTER PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(UserId) ON ai.RecommendationLogs BEFORE DELETE
     WITH (STATE = ON);
 GO
 
