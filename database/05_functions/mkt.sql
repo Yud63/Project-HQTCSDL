@@ -1,7 +1,7 @@
 /* ============================================================
    File    : database/05_functions/mkt.sql
    Module  : mkt - M7 Marketplace
-   Purpose : Function: fn_CalcMarketplaceFee, fn_SellerRating.
+   Purpose : Function: fn_CalcMarketplaceFee, fn_SellerRating, fn_SellerRatingCount.
    Owner   : D (xem docs/Phan-cong.md)
    Depends : iam
    Re-run  : CREATE OR ALTER - chạy lại bao nhiêu lần cũng được.
@@ -41,8 +41,10 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER (BR-MKT-15): điểm uy tín tính trên toàn bảng giao dịch, không bị RLS lọc theo người gọi
 CREATE OR ALTER FUNCTION mkt.fn_SellerRating (@SellerId INT)
 RETURNS DECIMAL(3,2)
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     DECLARE @r DECIMAL(3,2);
@@ -50,5 +52,16 @@ BEGIN
     FROM mkt.MarketTransactions
     WHERE SellerId = @SellerId AND BuyerRating IS NOT NULL;
     RETURN @r;
+END
+GO
+
+
+-- WITH EXECUTE AS OWNER (BR-MKT-15): uy tín người bán là thông tin công khai nên đếm trên toàn bảng, không bị RLS lọc theo người gọi
+CREATE OR ALTER FUNCTION mkt.fn_SellerRatingCount (@SellerId INT)
+RETURNS INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    RETURN (SELECT COUNT(BuyerRating) FROM mkt.MarketTransactions WHERE SellerId = @SellerId);
 END
 GO

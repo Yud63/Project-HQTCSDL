@@ -4,7 +4,7 @@ SET QUOTED_IDENTIFIER ON;
 SET ANSI_NULLS ON;
 GO
 
--- Danh mục chuẩn: Contracts mục 8 + ord.fn_IsValidComplaintTransition (function thứ 15, được nhóm thêm)
+-- Danh mục chuẩn: Contracts mục 8 + ord.fn_IsValidComplaintTransition (function thứ 15) + mkt.fn_SellerRatingCount (function thứ 16, 4D.3), được nhóm thêm
 CREATE TABLE #exp (SchemaName SYSNAME COLLATE DATABASE_DEFAULT,
                    ObjName    SYSNAME COLLATE DATABASE_DEFAULT,
                    Kind       CHAR(1) COLLATE DATABASE_DEFAULT);
@@ -31,12 +31,12 @@ INSERT #exp VALUES
  (N'lab',N'sp_GetLabDetail','P'),(N'lab',N'sp_GetMyLabs','P'),
  (N'ord',N'sp_GetMyOrders','P'),(N'ord',N'sp_GetOrderDetail','P'),
  (N'lab',N'sp_GetReferenceData','P'),(N'lab',N'sp_ListLabsForApproval','P'),(N'iam',N'sp_ListUsers','P'),(N'ai',N'sp_SearchKnowledge','P'),
- -- Function (14 + 1)
+ -- Function (14 + 2)
  (N'lab',N'fn_LabCapacityLeft','F'),(N'lab',N'fn_DistanceKm','F'),
  (N'ord',N'fn_CalcOrderTotal','F'),(N'ord',N'fn_CalcPlatformFee','F'),(N'ord',N'fn_NextStage','F'),(N'ord',N'fn_IsValidTransition','F'),(N'ord',N'fn_CalcDeliveryFee','F'),(N'ord',N'fn_LabAvgRating','F'),
  (N'ord',N'fn_IsValidComplaintTransition','F'),
  (N'dlv',N'fn_IsValidDeliveryTransition','F'),(N'arc',N'fn_GetPhotoMetadata','F'),
- (N'mkt',N'fn_CalcMarketplaceFee','F'),(N'mkt',N'fn_SellerRating','F'),
+ (N'mkt',N'fn_CalcMarketplaceFee','F'),(N'mkt',N'fn_SellerRating','F'),(N'mkt',N'fn_SellerRatingCount','F'),
  (N'com',N'fn_EventSeatsLeft','F'),(N'ai',N'fn_LabScores','F'),
  -- View (14)
  (N'lab',N'vw_TopLabs','V'),

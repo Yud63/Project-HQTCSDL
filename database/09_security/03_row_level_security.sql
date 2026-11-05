@@ -25,6 +25,8 @@ DROP SECURITY POLICY IF EXISTS sec.pol_AIChatLogs;
 DROP SECURITY POLICY IF EXISTS sec.pol_RecommendationLogs;
 DROP SECURITY POLICY IF EXISTS sec.pol_LabApprovals;
 DROP SECURITY POLICY IF EXISTS sec.pol_Articles;
+DROP SECURITY POLICY IF EXISTS sec.pol_MarketTransactions;
+DROP SECURITY POLICY IF EXISTS sec.pol_Messages;
 GO
 
 IF SCHEMA_ID(N'sec') IS NULL EXEC (N'CREATE SCHEMA sec AUTHORIZATION dbo;');
@@ -119,6 +121,14 @@ RETURN SELECT 1 AS Allowed
 WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
    OR @AuthorId = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
 GO
+-- Hai bên của giao dịch/tin nhắn (BR-MKT-15): một trong hai bên hoặc Admin. Dùng cho mkt.MarketTransactions (Seller, Buyer) và mkt.Messages (Sender, Receiver)
+CREATE OR ALTER FUNCTION sec.fn_TwoPartyAccess(@PartyA INT, @PartyB INT)
+RETURNS TABLE WITH SCHEMABINDING AS
+RETURN SELECT 1 AS Allowed
+WHERE IS_MEMBER(N'db_owner') = 1 OR IS_MEMBER(N'role_Admin') = 1
+   OR @PartyA = CONVERT(INT, SESSION_CONTEXT(N'UserId'))
+   OR @PartyB = CONVERT(INT, SESSION_CONTEXT(N'UserId'));
+GO
 
 -- Chặng giao: đối tác được giao, hoặc khách sở hữu địa chỉ của chặng (BR-DLV-11)
 CREATE OR ALTER FUNCTION sec.fn_DeliveryAccess(@DeliveryPartnerId INT, @CustomerAddressId INT)
@@ -191,6 +201,20 @@ CREATE SECURITY POLICY sec.pol_Articles
     ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles AFTER UPDATE,
     ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles BEFORE UPDATE,
     ADD BLOCK PREDICATE sec.fn_ArticleWriteAccess(AuthorId) ON com.Articles BEFORE DELETE
+    WITH (STATE = ON);
+CREATE SECURITY POLICY sec.pol_MarketTransactions
+    ADD FILTER PREDICATE sec.fn_TwoPartyAccess(SellerId, BuyerId) ON mkt.MarketTransactions,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(BuyerId) ON mkt.MarketTransactions AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SellerId, BuyerId) ON mkt.MarketTransactions AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SellerId, BuyerId) ON mkt.MarketTransactions BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SellerId, BuyerId) ON mkt.MarketTransactions BEFORE DELETE
+    WITH (STATE = ON);
+CREATE SECURITY POLICY sec.pol_Messages
+    ADD FILTER PREDICATE sec.fn_TwoPartyAccess(SenderId, ReceiverId) ON mkt.Messages,
+    ADD BLOCK PREDICATE sec.fn_OwnerAccess(SenderId) ON mkt.Messages AFTER INSERT,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SenderId, ReceiverId) ON mkt.Messages AFTER UPDATE,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SenderId, ReceiverId) ON mkt.Messages BEFORE UPDATE,
+    ADD BLOCK PREDICATE sec.fn_TwoPartyAccess(SenderId, ReceiverId) ON mkt.Messages BEFORE DELETE
     WITH (STATE = ON);
 GO
 

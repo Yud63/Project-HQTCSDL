@@ -54,7 +54,7 @@ SELECT u.UserId   AS SellerId,
        ISNULL(t.CompletedRevenue, 0)      AS CompletedRevenue,
        ISNULL(t.PlatformFeeTotal, 0)      AS PlatformFeeTotal,
        mkt.fn_SellerRating(u.UserId)      AS AvgRating,
-       ISNULL(t.RatingCount, 0)           AS RatingCount
+       mkt.fn_SellerRatingCount(u.UserId) AS RatingCount
 FROM iam.Users u
 OUTER APPLY (SELECT COUNT(*) AS TotalListings,
                     SUM(CASE WHEN Status = N'Active' THEN 1 ELSE 0 END) AS ActiveListings
@@ -64,8 +64,7 @@ OUTER APPLY (SELECT COUNT(*) AS TotalTransactions,
                     SUM(CASE WHEN Status = N'Cancelled' THEN 1 ELSE 0 END) AS CancelledTransactions,
                     SUM(CASE WHEN Status = N'Disputed'  THEN 1 ELSE 0 END) AS DisputedTransactions,
                     SUM(CASE WHEN Status = N'Completed' THEN TotalAmount ELSE 0 END) AS CompletedRevenue,
-                    SUM(CASE WHEN Status = N'Completed' THEN PlatformFee ELSE 0 END) AS PlatformFeeTotal,
-                    COUNT(BuyerRating) AS RatingCount
+                    SUM(CASE WHEN Status = N'Completed' THEN PlatformFee ELSE 0 END) AS PlatformFeeTotal
              FROM mkt.MarketTransactions WHERE SellerId = u.UserId) t
 WHERE u.IsDeleted = 0 AND (l.TotalListings > 0 OR t.TotalTransactions > 0);
 GO

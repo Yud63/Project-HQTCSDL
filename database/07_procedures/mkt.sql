@@ -252,11 +252,13 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER (BR-MKT-15): kiểm tra "còn giao dịch khác trên tin" phải thấy mọi người mua, không bị RLS lọc
 CREATE OR ALTER PROCEDURE mkt.sp_UpdateMarketTransaction
     @TransactionId INT,
     @ActorUserId   INT,
     @NewStatus     NVARCHAR(9),
     @Reason        NVARCHAR(500) = NULL
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -335,11 +337,13 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER (BR-MKT-15): cùng lý do sp_UpdateMarketTransaction; Admin xác thực theo iam.UserRoles không phụ thuộc role của kết nối
 CREATE OR ALTER PROCEDURE mkt.sp_ResolveDispute
     @TransactionId INT,
     @AdminUserId   INT,
     @Decision      NVARCHAR(9),
     @Resolution    NVARCHAR(500)
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -553,10 +557,12 @@ BEGIN
 END
 GO
 
+-- WITH EXECUTE AS OWNER (BR-MKT-15): job role_System không có UserId nên nếu không có OWNER thì RLS ẩn hết giao dịch và xử lý 0 dòng mà không báo lỗi
 CREATE OR ALTER PROCEDURE mkt.sp_RunMaintenance
     @ActorUserId   INT = NULL,
     @ClosedListings INT = NULL OUTPUT,
     @AutoCompleted  INT = NULL OUTPUT
+WITH EXECUTE AS OWNER
 AS
 BEGIN
     SET NOCOUNT ON;
