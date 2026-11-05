@@ -3,7 +3,7 @@
    Purpose : Tạo SQL login cho backend (mỗi role một login) và gắn vào database role.
    Re-run  : Chạy lại được (login đã có thì chỉ đổi mật khẩu).
    Chạy (từ thư mục gốc repo, MỘT DÒNG; mật khẩu mạnh, không dùng ^ & % " trong mật khẩu):
-     sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -v PwAuth="..." PwCustomer="..." PwLabOwner="..." PwExpert="..." PwDelivery="..." PwAdmin="..." -i database\09_security\05_sql_logins.sql
+     sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -v PwAuth="..." PwCustomer="..." PwLabOwner="..." PwExpert="..." PwDelivery="..." PwAdmin="..." PwSystem="..." -i database\09_security\05_sql_logins.sql
    KHÔNG đưa file này vào 99_run_all.sql / build.cmd. KHÔNG cấp sysadmin hay db_owner (sẽ qua mặt RLS).
    ============================================================ */
 USE FilmLabDB;
@@ -28,6 +28,9 @@ ELSE ALTER LOGIN fl_delivery  WITH PASSWORD = N'$(PwDelivery)';
 IF SUSER_ID(N'fl_admin') IS NULL
     CREATE LOGIN fl_admin     WITH PASSWORD = N'$(PwAdmin)',    DEFAULT_DATABASE = FilmLabDB, CHECK_POLICY = ON;
 ELSE ALTER LOGIN fl_admin     WITH PASSWORD = N'$(PwAdmin)';
+IF SUSER_ID(N'fl_system') IS NULL
+    CREATE LOGIN fl_system    WITH PASSWORD = N'$(PwSystem)',   DEFAULT_DATABASE = FilmLabDB, CHECK_POLICY = ON;
+ELSE ALTER LOGIN fl_system    WITH PASSWORD = N'$(PwSystem)';
 GO
 
 -- ===== 2. User trong FilmLabDB + gắn database role =====
@@ -37,6 +40,7 @@ IF DATABASE_PRINCIPAL_ID(N'fl_labowner') IS NULL CREATE USER fl_labowner FOR LOG
 IF DATABASE_PRINCIPAL_ID(N'fl_expert')   IS NULL CREATE USER fl_expert   FOR LOGIN fl_expert;
 IF DATABASE_PRINCIPAL_ID(N'fl_delivery') IS NULL CREATE USER fl_delivery FOR LOGIN fl_delivery;
 IF DATABASE_PRINCIPAL_ID(N'fl_admin')    IS NULL CREATE USER fl_admin    FOR LOGIN fl_admin;
+IF DATABASE_PRINCIPAL_ID(N'fl_system')   IS NULL CREATE USER fl_system   FOR LOGIN fl_system;
 
 ALTER ROLE role_Auth     ADD MEMBER fl_auth;
 ALTER ROLE role_Customer ADD MEMBER fl_customer;
@@ -44,9 +48,10 @@ ALTER ROLE role_LabOwner ADD MEMBER fl_labowner;
 ALTER ROLE role_Expert   ADD MEMBER fl_expert;
 ALTER ROLE role_Delivery ADD MEMBER fl_delivery;
 ALTER ROLE role_Admin    ADD MEMBER fl_admin;
+ALTER ROLE role_System   ADD MEMBER fl_system;
 GO
 
--- ===== 3. Kết quả: 6 dòng login -> role =====
+-- ===== 3. Kết quả: 7 dòng login -> role =====
 SELECT l.name AS LoginName, r.name AS DbRole
 FROM sys.database_role_members m
 JOIN sys.database_principals r ON r.principal_id = m.role_principal_id

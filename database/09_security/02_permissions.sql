@@ -82,11 +82,15 @@ GRANT EXECUTE ON SCHEMA::mkt TO role_Admin;
 GRANT EXECUTE ON SCHEMA::com TO role_Admin;
 GRANT EXECUTE ON SCHEMA::ai  TO role_Admin;
 
+
+-- ===== 5b. GRANT EXECUTE: role_System (job hệ thống định kỳ; chỉ procedure bảo trì marketplace) =====
+GRANT EXECUTE ON mkt.sp_RunMaintenance TO role_System;
+
 -- ===== 6. DENY EXECUTE procedure nội bộ (chỉ được gọi qua procedure/trigger khác nhờ ownership chaining) =====
-DENY EXECUTE ON audit.sp_WriteAudit        TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin; -- BR-AUD-02
-DENY EXECUTE ON arc.sp_CreateNotification  TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin;
-DENY EXECUTE ON lab.sp_RecalcLabRating     TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin; -- BR-LAB-06
-DENY EXECUTE ON dlv.sp_RequestDelivery     TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin;
+DENY EXECUTE ON audit.sp_WriteAudit        TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin, role_System; -- BR-AUD-02
+DENY EXECUTE ON arc.sp_CreateNotification  TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin, role_System;
+DENY EXECUTE ON lab.sp_RecalcLabRating     TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin, role_System; -- BR-LAB-06
+DENY EXECUTE ON dlv.sp_RequestDelivery     TO role_Customer, role_LabOwner, role_Expert, role_Delivery, role_Admin, role_System;
 
 -- ===== 7. GRANT SELECT view =====
 -- Customer

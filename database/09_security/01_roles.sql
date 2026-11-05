@@ -12,4 +12,5 @@ IF DATABASE_PRINCIPAL_ID(N'role_Expert')    IS NULL CREATE ROLE role_Expert;    
 IF DATABASE_PRINCIPAL_ID(N'role_Delivery')  IS NULL CREATE ROLE role_Delivery;   -- Delivery Partner
 IF DATABASE_PRINCIPAL_ID(N'role_Admin')     IS NULL CREATE ROLE role_Admin;      -- System Administrator
 IF DATABASE_PRINCIPAL_ID(N'role_Auth')      IS NULL CREATE ROLE role_Auth;       -- Backend đăng ký/đăng nhập (chưa có UserId)
+IF DATABASE_PRINCIPAL_ID(N'role_System')    IS NULL CREATE ROLE role_System;     -- Job hệ thống định kỳ (backend scheduler), chỉ cấp EXECUTE tối thiểu
 GO

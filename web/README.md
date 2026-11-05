@@ -34,6 +34,7 @@ Bật trước khi chạy script: Mixed Mode (SSMS → Properties → Security) 
 | `fl_expert` | role_Expert | Request của chuyên gia |
 | `fl_delivery` | role_Delivery | Request của đối tác giao hàng |
 | `fl_admin` | role_Admin | Request của Admin |
+| `fl_system` | role_System | Job hệ thống định kỳ, chỉ chạy `mkt.sp_RunMaintenance` (không có UserId) |
 
 Không cấp `sysadmin` hoặc `db_owner` cho các login này — sẽ qua mặt RLS.
 

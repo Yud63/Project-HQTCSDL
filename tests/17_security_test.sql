@@ -1,6 +1,6 @@
 /* ============================================================
    File    : tests/17_security_test.sql
-   Purpose : Kiểm tra GRANT/DENY, RLS, Data Masking cho 5 role (Đợt 7). Mong đợi 16 PASS.
+   Purpose : Kiểm tra GRANT/DENY, RLS, Data Masking cho 5 role (Đợt 7). Mong đợi 22 PASS.
    Cách chạy (trong thư mục tests, KHÔNG dùng -b):
      sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -i 17_security_test.sql | find /c "PASS:"
    ============================================================ */
@@ -207,3 +207,66 @@ DROP USER u_exp;
 DROP USER u_dlv;
 DROP USER u_adm;
 GO
+
+-- ===== role_System (Việc 3E) =====
+IF USER_ID(N'u_sys') IS NOT NULL DROP USER u_sys;
+CREATE USER u_sys WITHOUT LOGIN;  ALTER ROLE role_System ADD MEMBER u_sys;
+DECLARE @g INT, @e INT, @b INT, @x INT, @err INT, @c INT, @a INT, @oid INT, @msg NVARCHAR(4000);
+
+-- T17: u_sys chỉ thuộc đúng 1 role (role_System), không db_owner
+SET @g = (SELECT COUNT(*) FROM sys.database_role_members WHERE member_principal_id = USER_ID(N'u_sys'));
+SET @e = IS_ROLEMEMBER(N'role_System', N'u_sys');
+SET @b = IS_ROLEMEMBER(N'db_owner', N'u_sys');
+IF @g = 1 AND @e = 1 AND @b = 0 PRINT N'PASS: T17 role_System chỉ 1 role, không db_owner';
+ELSE PRINT N'FAIL: T17 role_System chỉ 1 role, không db_owner';
+
+-- T18-T20: ma trận EXECUTE của role_System
+EXECUTE AS USER = N'u_sys';
+SET @g = HAS_PERMS_BY_NAME(N'mkt.sp_RunMaintenance', N'OBJECT', N'EXECUTE');
+SET @e = HAS_PERMS_BY_NAME(N'audit.sp_WriteAudit',       N'OBJECT', N'EXECUTE')
+       + HAS_PERMS_BY_NAME(N'arc.sp_CreateNotification', N'OBJECT', N'EXECUTE')
+       + HAS_PERMS_BY_NAME(N'lab.sp_RecalcLabRating',    N'OBJECT', N'EXECUTE')
+       + HAS_PERMS_BY_NAME(N'dlv.sp_RequestDelivery',    N'OBJECT', N'EXECUTE');
+SET @b = HAS_PERMS_BY_NAME(N'ai.sp_PurgeOldLogs', N'OBJECT', N'EXECUTE');
+REVERT;
+IF @g = 1 PRINT N'PASS: T18 role_System EXECUTE được mkt.sp_RunMaintenance';
+ELSE PRINT N'FAIL: T18 role_System EXECUTE được mkt.sp_RunMaintenance';
+IF @e = 0 PRINT N'PASS: T19 role_System không có quyền 4 procedure nội bộ';
+ELSE PRINT N'FAIL: T19 role_System không có quyền 4 procedure nội bộ';
+IF @b = 0 PRINT N'PASS: T20 role_System chưa có quyền ai.sp_PurgeOldLogs (cấp ở Việc 4)';
+ELSE PRINT N'FAIL: T20 role_System chưa có quyền ai.sp_PurgeOldLogs (cấp ở Việc 4)';
+
+-- T21: gọi thật mkt.sp_RunMaintenance dưới role_System, bọc ROLLBACK, dữ liệu không đổi
+SET @x = (SELECT COUNT(*) FROM mkt.Listings WHERE Status = N'Closed')
+       + (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE Status = N'Completed');
+SET @err = 0; SET @msg = NULL;
+BEGIN TRAN;
+EXECUTE AS USER = N'u_sys';
+BEGIN TRY
+    EXEC mkt.sp_RunMaintenance @ClosedListings = @c OUTPUT, @AutoCompleted = @a OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @@TRANCOUNT > 0 ROLLBACK;
+SET @g = (SELECT COUNT(*) FROM mkt.Listings WHERE Status = N'Closed')
+       + (SELECT COUNT(*) FROM mkt.MarketTransactions WHERE Status = N'Completed');
+IF @err = 0 AND @g = @x PRINT N'PASS: T21 role_System gọi mkt.sp_RunMaintenance chạy được (đã ROLLBACK, dữ liệu không đổi)';
+ELSE PRINT N'FAIL: T21 role_System gọi mkt.sp_RunMaintenance, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi') + N'; trước=' + CAST(@x AS NVARCHAR(10)) + N', sau=' + CAST(@g AS NVARCHAR(10));
+
+-- T22: role_System gọi ord.sp_CreateOrder phải bị lỗi 229
+SET @err = 0; SET @msg = NULL;
+EXECUTE AS USER = N'u_sys';
+BEGIN TRY
+    EXEC ord.sp_CreateOrder @CustomerId = 1, @LabId = 1, @FulfillmentMethod = N'DropOff',
+                            @ReturnMethod = N'Delivery', @ItemsJson = N'[]', @NewOrderId = @oid OUTPUT;
+END TRY
+BEGIN CATCH
+    SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+END CATCH
+IF USER_NAME() <> N'dbo' REVERT;
+IF @err = 229 PRINT N'PASS: T22 role_System gọi ord.sp_CreateOrder bị lỗi 229';
+ELSE PRINT N'FAIL: T22 role_System gọi ord.sp_CreateOrder, mong đợi 229, nhận ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'không lỗi');
+
+DROP USER u_sys;
