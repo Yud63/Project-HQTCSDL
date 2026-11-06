@@ -20,10 +20,10 @@ BEGIN
     THROW 50001, @m1, 1;
 END
 
--- 2) Đủ 5 role
+-- 2) Đủ 7 role
 SET @missing = N'';
 SELECT @missing += r.Name + N' '
-FROM (VALUES (N'role_Customer'),(N'role_LabOwner'),(N'role_Expert'),(N'role_Delivery'),(N'role_Admin')) AS r(Name)
+FROM (VALUES (N'role_Customer'),(N'role_LabOwner'),(N'role_Expert'),(N'role_Delivery'),(N'role_Admin'),(N'role_Auth'),(N'role_System')) AS r(Name)
 WHERE DATABASE_PRINCIPAL_ID(r.Name) IS NULL;
 
 IF @missing <> N''

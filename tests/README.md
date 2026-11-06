@@ -4,7 +4,7 @@ Mỗi test là một file `NN_<ten>.sql`. Test sai thì `THROW` (để CI báo �
 
 | File | Việc kiểm tra |
 |---|---|
-| `00_smoke_test.sql` | Đủ 9 schema, đủ 5 role nghiệp vụ (Customer, LabOwner, Expert, Delivery, Admin) |
+| `00_smoke_test.sql` | Đủ 9 schema, đủ 7 role (Customer, LabOwner, Expert, Delivery, Admin, Auth, System) |
 | `01_schema_check.sql` | Schema dựng đúng: số bảng, FK, index, seed danh mục, bảng temporal, các ràng buộc chặn dữ liệu sai (sinh bởi tools) |
 | `02_audit_notification_test.sql` | `audit.sp_WriteAudit` và `arc.sp_CreateNotification` |
 | `03_register_user_test.sql` | `iam.sp_RegisterUser`: đăng ký đúng, tạo user và gán role Customer |
