@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Tìm lab | FilmLab</title>
+
+    <style>
+        :root {
+            --paper: #f6f5ef;
+            --surface: #fffef9;
+            --ink: #202c26;
+            --muted: #53645b;
+            --green: #173d30;
+            --accent: #d9ef91;
+            --line: #d4dacf;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            color: var(--ink);
+            background: var(--paper);
+            font-family: "Segoe UI", Arial, sans-serif;
+            line-height: 1.5;
+        }
+
+        .container {
+            width: min(1040px, calc(100% - 40px));
+            margin-inline: auto;
+        }
+
+        .site-header {
+            padding: 20px 0;
+            color: var(--surface);
+            background: var(--green);
+        }
+
+        .brand {
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 23px;
+            font-weight: 750;
+        }
+
+        .film-icon {
+            width: 34px;
+            height: 25px;
+            border: 3px solid var(--accent);
+            border-block-style: dotted;
+            border-radius: 3px;
+        }
+
+        main {
+            padding-block: 48px 64px;
+        }
+
+        h1 {
+            margin: 0 0 24px;
+            font-size: clamp(32px, 5vw, 52px);
+            line-height: 1.12;
+            letter-spacing: -0.04em;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 18px;
+            padding: 20px;
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 14px;
+            font-weight: 650;
+        }
+
+        input,
+        select {
+            width: 100%;
+            min-height: 44px;
+            padding: 10px 12px;
+            border: 1px solid #a7b3a7;
+            border-radius: 7px;
+            color: var(--ink);
+            background: white;
+            font: inherit;
+        }
+
+        :focus-visible {
+            outline: 3px solid #397955;
+            outline-offset: 3px;
+        }
+
+        .result-count {
+            margin: 26px 0 12px;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .lab-list {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 18px;
+        }
+
+        .lab-card {
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            border: 1px solid var(--line);
+            border-top: 4px solid var(--green);
+            border-radius: 12px;
+            background: var(--surface);
+        }
+
+        .lab-card[hidden] {
+            display: none;
+        }
+
+        .city {
+            margin: 0 0 4px;
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        .lab-card h2 {
+            margin: 0;
+            font-size: clamp(23px, 3vw, 29px);
+            line-height: 1.25;
+        }
+
+        .rating {
+            margin: 10px 0 20px;
+            color: var(--muted);
+            font-size: 15px;
+        }
+
+        .star {
+            color: #99620c;
+        }
+
+        .lab-facts {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin: auto 0 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--line);
+        }
+
+        .lab-facts dt {
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .lab-facts dd {
+            margin: 2px 0 0;
+            font-size: 19px;
+            font-weight: 700;
+        }
+
+        .detail-link {
+            align-self: flex-start;
+            padding: 10px 16px;
+            border-radius: 7px;
+            color: var(--green);
+            background: var(--accent);
+            font-weight: 700;
+            text-decoration: none;
+        }
+
+        .detail-link:hover {
+            background: #c9e57c;
+            text-decoration: underline;
+        }
+
+        @media (max-width: 680px) {
+            main {
+                padding-top: 30px;
+            }
+
+            .filters,
+            .lab-list {
+                grid-template-columns: 1fr;
+            }
+
+            .lab-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="site-header">
+        <div class="container">
+            <div class="brand">
+                <span class="film-icon" aria-hidden="true"></span>
+                FilmLab
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <h1>Tìm lab tráng và scan phim</h1>
+
+        <div class="filters" role="search" aria-label="Tìm lab">
+            <div>
+                <label for="keyword">Tên lab</label>
+                <input id="keyword" type="search"
+                       placeholder="Nhập tên lab, ví dụ Sài Gòn">
+            </div>
+
+            <div>
+                <label for="city">Thành phố</label>
+                                <select id="city">
+                    <option value="">Tất cả thành phố</option>
+                    <% const cities = [...new Set(labs.map(lab => lab.City).filter(Boolean))]; %>
+                    <% for (const city of cities) { %>
+                        <option value="<%= city %>"><%= city %></option>
+                    <% } %>
+                </select>
+            </div>
+        </div>
+
+        <p id="result-count" class="result-count" role="status">
+            <%= labs.length > 0
+                ? `Tìm thấy ${labs.length} lab`
+                : 'Không tìm thấy lab phù hợp.' %>
+        </p>
+
+        <div class="lab-list">
+            <% for (const lab of labs) { %>
+                <article class="lab-card">
+                    <p class="city"><%= lab.City %></p>
+                    <h2><%= lab.LabName %></h2>
+
+                    <p class="rating">
+                        <% if (Number(lab.ReviewCount) > 0) { %>
+                            <span class="star" aria-hidden="true">★</span>
+                            <strong><%= Number(lab.AvgRating).toLocaleString('vi-VN') %>/5</strong>
+                            · <%= lab.ReviewCount %> đánh giá
+                        <% } else { %>
+                            Chưa có đánh giá
+                        <% } %>
+                    </p>
+
+                    <dl class="lab-facts">
+                        <div>
+                            <dt>Giá từ</dt>
+                            <dd>
+                                <%= lab.MinPrice == null
+                                    ? 'Chưa có giá'
+                                    : Number(lab.MinPrice).toLocaleString('vi-VN') + ' đ' %>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Xử lý nhanh nhất</dt>
+                            <dd>
+                                <%= lab.MinTurnaroundDays == null
+                                    ? 'Chưa cập nhật'
+                                    : lab.MinTurnaroundDays + ' ngày' %>
+                            </dd>
+                        </div>
+                    </dl>
+
+                    <a class="detail-link"
+                       href="/labs/<%= lab.LabId %>"
+                       aria-label="Xem chi tiết <%= lab.LabName %>">
+                        Xem chi tiết <span aria-hidden="true">→</span>
+                    </a>
+                </article>
+            <% } %>
+        </div>
+    </main>
+
+    <script>
+        const keywordInput = document.querySelector("#keyword");
+        const citySelect = document.querySelector("#city");
+        const resultCount = document.querySelector("#result-count");
+        const labCards = document.querySelectorAll(".lab-card");
+
+        function normalizeText(text) {
+            return text
+                .toLocaleLowerCase("vi")
+                .normalize("NFD")
+                .replace(/[\u0300-\u036f]/g, "")
+                .replace(/đ/g, "d")
+                .trim();
+        }
+
+        function filterLabs() {
+            const keyword = normalizeText(keywordInput.value);
+            const selectedCity = citySelect.value;
+            let visibleCount = 0;
+
+            for (const card of labCards) {
+                const labName = normalizeText(card.querySelector("h2").textContent);
+                const labCity = card.querySelector(".city").textContent.trim();
+                const matchesName = labName.includes(keyword);
+                const matchesCity = selectedCity === "" || labCity === selectedCity;
+
+                card.hidden = !(matchesName && matchesCity);
+
+                if (!card.hidden) {
+                    visibleCount++;
+                }
+            }
+
+            resultCount.textContent = visibleCount > 0
+                ? `Tìm thấy ${visibleCount} lab`
+                : "Không tìm thấy lab phù hợp. Hãy đổi tên lab hoặc thành phố.";
+        }
+
+        keywordInput.addEventListener("input", filterLabs);
+        citySelect.addEventListener("change", filterLabs);
+    </script>
+</body>
+</html>

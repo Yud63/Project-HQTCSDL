@@ -66,10 +66,13 @@
             letter-spacing: -0.04em;
         }
 
-        .filters {
+        .filters, .lab-list {
             display: grid;
-            grid-template-columns: 2fr 1fr;
             gap: 18px;
+        }
+
+        .filters {
+            grid-template-columns: 2fr 1fr;
             padding: 20px;
             border: 1px solid var(--line);
             border-radius: 14px;
@@ -83,8 +86,7 @@
             font-weight: 650;
         }
 
-        input,
-        select {
+        input, select {
             width: 100%;
             min-height: 44px;
             padding: 10px 12px;
@@ -103,13 +105,10 @@
         .result-count {
             margin: 26px 0 12px;
             color: var(--muted);
-            font-size: 15px;
         }
 
         .lab-list {
-            display: grid;
             grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 18px;
         }
 
         .lab-card {
@@ -126,10 +125,12 @@
             display: none;
         }
 
+        .city, .rating {
+            color: var(--muted);
+        }
+
         .city {
             margin: 0 0 4px;
-            color: var(--muted);
-            font-size: 14px;
         }
 
         .lab-card h2 {
@@ -140,8 +141,6 @@
 
         .rating {
             margin: 10px 0 20px;
-            color: var(--muted);
-            font-size: 15px;
         }
 
         .star {
@@ -179,7 +178,6 @@
         }
 
         .detail-link:hover {
-            background: #c9e57c;
             text-decoration: underline;
         }
 
@@ -188,8 +186,7 @@
                 padding-top: 30px;
             }
 
-            .filters,
-            .lab-list {
+            .filters, .lab-list {
                 grid-template-columns: 1fr;
             }
 
@@ -223,61 +220,60 @@
                 <label for="city">Thành phố</label>
                 <select id="city">
                     <option value="">Tất cả thành phố</option>
-                    <option value="TP. Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                    <option value="Hà Nội">Hà Nội</option>
+                    <% const cities = [...new Set(labs.map(lab => lab.City).filter(Boolean))]; %>
+                    <% for (const city of cities) { %>
+                        <option value="<%= city %>"><%= city %></option>
+                    <% } %>
                 </select>
             </div>
         </div>
 
-        <p id="result-count" class="result-count" role="status">Tìm thấy 2 lab</p>
+        <p id="result-count" class="result-count" role="status">
+            <%= labs.length ? `Tìm thấy ${labs.length} lab` : 'Không tìm thấy lab phù hợp.' %>
+        </p>
 
         <div class="lab-list">
-            <article class="lab-card">
-                <p class="city">TP. Hồ Chí Minh</p>
-                <h2>Sài Gòn Film Lab</h2>
-                <p class="rating">
-                    <span class="star" aria-hidden="true">★</span>
-                    <strong>4,5/5</strong> · 2 đánh giá
-                </p>
+            <% for (const lab of labs) { %>
+                <article class="lab-card">
+                    <p class="city"><%= lab.City %></p>
+                    <h2><%= lab.LabName %></h2>
 
-                <dl class="lab-facts">
-                    <div>
-                        <dt>Giá từ</dt>
-                        <dd>60.000 đ</dd>
-                    </div>
-                    <div>
-                        <dt>Xử lý nhanh nhất</dt>
-                        <dd>2 ngày</dd>
-                    </div>
-                </dl>
+                    <p class="rating">
+                        <% if (Number(lab.ReviewCount) > 0) { %>
+                            <span class="star" aria-hidden="true">★</span>
+                            <strong><%= Number(lab.AvgRating).toLocaleString('vi-VN') %>/5</strong>
+                            · <%= lab.ReviewCount %> đánh giá
+                        <% } else { %>
+                            Chưa có đánh giá
+                        <% } %>
+                    </p>
 
-                <a class="detail-link" href="/labs/1"
-                   aria-label="Xem chi tiết Sài Gòn Film Lab">
-                    Xem chi tiết <span aria-hidden="true">→</span>
-                </a>
-            </article>
+                    <dl class="lab-facts">
+                        <div>
+                            <dt>Giá từ</dt>
+                            <dd>
+                                <%= lab.MinPrice == null
+                                    ? 'Chưa có giá'
+                                    : Number(lab.MinPrice).toLocaleString('vi-VN') + ' đ' %>
+                            </dd>
+                        </div>
+                        <div>
+                            <dt>Xử lý nhanh nhất</dt>
+                            <dd>
+                                <%= lab.MinTurnaroundDays == null
+                                    ? 'Chưa cập nhật'
+                                    : lab.MinTurnaroundDays + ' ngày' %>
+                            </dd>
+                        </div>
+                    </dl>
 
-            <article class="lab-card">
-                <p class="city">Hà Nội</p>
-                <h2>Hà Nội Analog Lab</h2>
-                <p class="rating">Chưa có đánh giá</p>
-
-                <dl class="lab-facts">
-                    <div>
-                        <dt>Giá từ</dt>
-                        <dd>5.000 đ</dd>
-                    </div>
-                    <div>
-                        <dt>Xử lý nhanh nhất</dt>
-                        <dd>3 ngày</dd>
-                    </div>
-                </dl>
-
-                <a class="detail-link" href="/labs/2"
-                   aria-label="Xem chi tiết Hà Nội Analog Lab">
-                    Xem chi tiết <span aria-hidden="true">→</span>
-                </a>
-            </article>
+                    <a class="detail-link"
+                       href="/labs/<%= lab.LabId %>"
+                       aria-label="Xem chi tiết <%= lab.LabName %>">
+                        Xem chi tiết <span aria-hidden="true">→</span>
+                    </a>
+                </article>
+            <% } %>
         </div>
     </main>
 
@@ -288,8 +284,7 @@
         const labCards = document.querySelectorAll(".lab-card");
 
         function normalizeText(text) {
-            return text
-                .toLocaleLowerCase("vi")
+            return text.toLocaleLowerCase("vi")
                 .normalize("NFD")
                 .replace(/[\u0300-\u036f]/g, "")
                 .replace(/đ/g, "d")
@@ -302,19 +297,17 @@
             let visibleCount = 0;
 
             for (const card of labCards) {
-                const labName = normalizeText(card.querySelector("h2").textContent);
-                const labCity = card.querySelector(".city").textContent.trim();
-                const matchesName = labName.includes(keyword);
-                const matchesCity = selectedCity === "" || labCity === selectedCity;
+                const name = normalizeText(card.querySelector("h2").textContent);
+                const city = card.querySelector(".city").textContent.trim();
+                const matchesCity = selectedCity === "" || city === selectedCity;
 
-                card.hidden = !(matchesName && matchesCity);
-
+                card.hidden = !(name.includes(keyword) && matchesCity);
                 if (!card.hidden) {
                     visibleCount++;
                 }
             }
 
-            resultCount.textContent = visibleCount > 0
+            resultCount.textContent = visibleCount
                 ? `Tìm thấy ${visibleCount} lab`
                 : "Không tìm thấy lab phù hợp. Hãy đổi tên lab hoặc thành phố.";
         }
