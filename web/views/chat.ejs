@@ -1,0 +1,16 @@
+<%- include('partials/header') %>
+<div class="chat-page">
+<h1>Trợ lý AI</h1>
+<p class="muted">Hỏi về nhiếp ảnh phim. Trợ lý chỉ trả lời dựa trên tài liệu đã được duyệt trong hệ thống.</p>
+<div class="chat card">
+  <div id="chat-log" class="chat-log" aria-live="polite">
+    <div class="chat-msg chat-bot">Xin chào! Bạn muốn hỏi gì về nhiếp ảnh phim?</div>
+  </div>
+  <form id="chat-form" class="chat-form" autocomplete="off">
+    <input type="text" id="chat-input" name="message" maxlength="<%= maxLen %>" placeholder="Nhập câu hỏi (tối đa <%= maxLen %> ký tự)" required>
+    <button class="btn" type="submit" id="chat-send">Gửi</button>
+  </form>
+</div>
+</div>
+<script src="/js/chat.js" defer></script>
+<%- include('partials/footer') %>
