@@ -1,0 +1,8 @@
+<%- include('partials/header') %>
+<div class="empty">
+  <h1><%= status %></h1>
+  <p><%= message %></p>
+  <p><a class="btn btn-primary" href="/">Về trang chủ</a></p>
+  <% if (locals.detail) { %><pre class="code"><%= detail %></pre><% } %>
+</div>
+<%- include('partials/footer') %>

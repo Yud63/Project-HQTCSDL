@@ -1,0 +1,13 @@
+<%- include('partials/header') %>
+<h1>Xin chào, <%= currentUser.name %></h1>
+<p class="muted">Vai trò đang dùng: <strong><%= currentUser.role %></strong></p>
+<% if (menu.length) { %>
+  <div class="grid">
+    <% menu.forEach(function (item) { %>
+      <a class="card card-link" href="<%= item.href %>"><%= item.label %></a>
+    <% }) %>
+  </div>
+<% } else { %>
+  <div class="empty"><p>Vai trò này chưa có màn hình nào.</p></div>
+<% } %>
+<%- include('partials/footer') %>

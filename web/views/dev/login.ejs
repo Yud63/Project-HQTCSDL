@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<h1>Đăng nhập thử</h1>
+<p class="muted">Chỉ có khi NODE_ENV=development, không cần mật khẩu. Tắt ở ngày 13.</p>
+<form method="post" action="/dev/login" class="card form">
+  <label>Tài khoản seed
+    <select name="email">
+      <% emails.forEach(function (e) { %>
+        <option value="<%= e %>" <%= e === email ? 'selected' : '' %>><%= e %></option>
+      <% }) %>
+    </select>
+  </label>
+  <% if (roles) { %>
+    <label>Vai trò đang dùng
+      <select name="role">
+        <% roles.forEach(function (r) { %><option value="<%= r %>"><%= r %></option><% }) %>
+      </select>
+    </label>
+  <% } %>
+  <button class="btn btn-primary" type="submit"><%= roles ? 'Vào với vai trò này' : 'Đăng nhập' %></button>
+</form>
+<%- include('../partials/footer') %>

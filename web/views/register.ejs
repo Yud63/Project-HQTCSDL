@@ -1,0 +1,24 @@
+<%- include('partials/header') %>
+<div class="auth">
+  <h1>Đăng ký</h1>
+  <form method="post" action="/register" class="card form">
+    <label>Email
+      <input type="email" name="email" value="<%= email %>" required autofocus>
+    </label>
+    <label>Họ tên
+      <input type="text" name="fullName" value="<%= fullName %>" required>
+    </label>
+    <label>Số điện thoại (không bắt buộc)
+      <input type="tel" name="phone" value="<%= phone %>">
+    </label>
+    <label>Mật khẩu (tối thiểu 8 ký tự)
+      <input type="password" name="password" required minlength="8">
+    </label>
+    <label>Nhập lại mật khẩu
+      <input type="password" name="confirm" required minlength="8">
+    </label>
+    <button class="btn btn-primary" type="submit">Đăng ký</button>
+  </form>
+  <p class="muted">Đã có tài khoản? <a href="/login">Đăng nhập</a></p>
+</div>
+<%- include('partials/footer') %>

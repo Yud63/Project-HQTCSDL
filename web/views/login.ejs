@@ -1,0 +1,15 @@
+<%- include('partials/header') %>
+<div class="auth">
+  <h1>Đăng nhập</h1>
+  <form method="post" action="/login" class="card form">
+    <label>Email
+      <input type="email" name="email" value="<%= email %>" required autofocus>
+    </label>
+    <label>Mật khẩu
+      <input type="password" name="password" required>
+    </label>
+    <button class="btn btn-primary" type="submit">Đăng nhập</button>
+  </form>
+  <p class="muted">Chưa có tài khoản? <a href="/register">Đăng ký</a></p>
+</div>
+<%- include('partials/footer') %>

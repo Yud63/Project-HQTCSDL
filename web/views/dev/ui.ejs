@@ -1,0 +1,59 @@
+<%- include('../partials/header') %>
+<h1>Mẫu giao diện</h1>
+<p class="muted">Chép class từ trang này, không tự viết CSS mới cho thành phần đã có.</p>
+
+<h2>Thông báo</h2>
+<div class="alert alert-success">success: thao tác thành công</div>
+<div class="alert alert-info">info: thông tin</div>
+<div class="alert alert-warning">warning: cảnh báo</div>
+<div class="alert alert-danger">danger: lỗi</div>
+
+<h2>Nút và nhãn</h2>
+<p>
+  <button class="btn btn-primary">Chính</button>
+  <button class="btn btn-outline">Phụ</button>
+  <button class="btn btn-danger">Xóa</button>
+  <button class="btn btn-primary btn-sm">Nhỏ</button>
+</p>
+<p>
+  <span class="badge">Mặc định</span>
+  <span class="badge badge-success">Hoàn tất</span>
+  <span class="badge badge-warning">Đang xử lý</span>
+  <span class="badge badge-danger">Đã hủy</span>
+</p>
+
+<h2>Form</h2>
+<form class="card form" onsubmit="return false">
+  <label>Họ tên <input type="text" placeholder="Nguyễn Văn A"></label>
+  <label>Loại phim
+    <select><option>35mm</option><option>120</option></select>
+  </label>
+  <label>Ghi chú <textarea rows="3"></textarea></label>
+  <button class="btn btn-primary" type="submit">Gửi</button>
+</form>
+
+<h2>Bảng</h2>
+<div class="table-wrap">
+  <table class="table">
+    <thead><tr><th>Mã đơn</th><th>Lab</th><th>Trạng thái</th><th class="num">Tổng tiền</th></tr></thead>
+    <tbody>
+      <tr><td>FL-2026-000001</td><td>Saigon Film Lab</td><td><span class="badge badge-success">Hoàn tất</span></td><td class="num">150.000</td></tr>
+      <tr><td>FL-2026-000002</td><td>Hanoi Analog</td><td><span class="badge badge-warning">Đang xử lý</span></td><td class="num">220.000</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<h2>Phân trang</h2>
+<div class="pagination">
+  <a href="#">&laquo;</a><a href="#" class="active">1</a><a href="#">2</a><a href="#">3</a><a href="#">&raquo;</a>
+</div>
+
+<h2>Trạng thái rỗng</h2>
+<div class="empty"><p>Chưa có dữ liệu.</p></div>
+
+<h2>Thẻ</h2>
+<div class="grid">
+  <div class="card"><strong>Tiêu đề</strong><p class="muted">Nội dung thẻ.</p></div>
+  <a class="card card-link" href="#">Thẻ có liên kết</a>
+</div>
+<%- include('../partials/footer') %>
