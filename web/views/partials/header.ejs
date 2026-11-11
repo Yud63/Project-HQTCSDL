@@ -1,0 +1,39 @@
+<% var _menu = locals.menu || [], _user = locals.currentUser || null, _path = locals.currentPath || '', _flash = locals.flash || []; %>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title><%= locals.title ? locals.title + ' · ' : '' %>FilmLab</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <% (locals.styles || []).forEach(function (s) { %><link rel="stylesheet" href="/css/<%= s %>.css">
+  <% }) %>
+</head>
+<body>
+<nav class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" href="/">FilmLab</a>
+    <ul class="nav-links">
+      <% _menu.forEach(function (item) { var active = _path === item.href || _path.indexOf(item.href + '/') === 0; %>
+        <li><a href="<%= item.href %>" class="<%= active ? 'active' : '' %>"><%= item.label %></a></li>
+      <% }) %>
+    </ul>
+    <div class="nav-user">
+      <% if (_user) { %>
+        <span class="user-name"><%= _user.name %></span>
+        <span class="badge"><%= _user.role %></span>
+        <form method="post" action="/logout"><button class="btn btn-sm btn-outline" type="submit">Đăng xuất</button></form>
+      <% } else { %>
+        <a class="btn btn-sm btn-outline" href="/register">Đăng ký</a>
+        <a class="btn btn-sm btn-primary" href="/login">Đăng nhập</a>
+      <% } %>
+    </div>
+  </div>
+</nav>
+<% if (locals.isDev) { %>
+<div class="dev-banner">Chế độ DEV: đăng nhập thử đang bật. <a href="/dev/ui">Mẫu giao diện</a></div>
+<% } %>
+<main class="container">
+  <% _flash.forEach(function (f) { %>
+    <div class="alert alert-<%= f.type %>"><%= f.msg %></div>
+  <% }) %>

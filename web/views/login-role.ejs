@@ -1,0 +1,14 @@
+<%- include('partials/header') %>
+<div class="auth">
+  <h1>Chọn vai trò</h1>
+  <p class="muted">Tài khoản của bạn có nhiều vai trò. Chọn vai trò muốn dùng cho phiên này.</p>
+  <form method="post" action="/login/role" class="card form">
+    <label>Vai trò đang dùng
+      <select name="role">
+        <% roles.forEach(function (r) { %><option value="<%= r %>"><%= r %></option><% }) %>
+      </select>
+    </label>
+    <button class="btn btn-primary" type="submit">Vào với vai trò này</button>
+  </form>
+</div>
+<%- include('partials/footer') %>
