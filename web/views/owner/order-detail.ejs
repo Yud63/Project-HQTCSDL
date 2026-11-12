@@ -19,12 +19,16 @@
 </div>
 </div>
 <h2>Cập nhật tiến độ</h2>
+<% if (stageOptions.length) { %>
 <form method="post" action="/owner/orders/<%= order.OrderId %>/stage" class="card form">
-<label>Chuyển sang trạng thái <select name="stageId" required><% stages.forEach(function(s){ %><option value="<%= s.StageId %>" <%= s.StageId===order.StageId?'selected':'' %>><%= s.StageName %> (<%= s.StageCode %>)</option><% }) %></select></label>
+<label>Chuyển sang trạng thái <select name="stageId" required><% stageOptions.forEach(function(s){ %><option value="<%= s.StageId %>"><%= s.StageName %> (<%= s.StageCode %>)</option><% }) %></select></label>
 <label>Ghi chú <textarea name="note" rows="2" maxlength="255"></textarea></label>
-<p class="muted">Chỉ chuyển trạng thái hợp lệ theo SQL; đơn chưa thanh toán đủ không thể hoàn tất.</p>
+<p class="muted">Chỉ hiển thị trạng thái hợp lệ với đơn hiện tại theo SQL; hệ thống vẫn kiểm tra quyền và điều kiện khi lưu.</p>
 <button type="submit" class="btn">Lưu trạng thái</button>
 </form>
+<% } else { %>
+<div class="card empty">Đơn hiện không có giai đoạn tiếp theo khả dụng.</div>
+<% } %>
 <h2>Chi tiết dịch vụ (<%= items.length %>)</h2>
 <% if(!items.length){ %><div class="card empty">Không có dòng dịch vụ.</div><% } else { %>
 <div class="table-wrap"><table class="table"><thead><tr><th>Mã dòng</th><th>Gói dịch vụ</th><th>Phim</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody><% items.forEach(function(i){ %><tr><td>#<%= i.OrderItemId %></td><td><%= i.PackageName %></td><td><%= i.FilmStock || '—' %></td><td class="num"><%= i.Quantity %></td><td class="num"><%= Number(i.UnitPriceSnapshot||0).toLocaleString('vi-VN') %> đ</td><td class="num"><%= Number(i.LineTotal||0).toLocaleString('vi-VN') %> đ</td></tr><% }) %></tbody></table></div><% } %>
