@@ -1,0 +1,28 @@
+<%- include('../partials/header') %>
+<a href="/labs/<%= lab.LabId %><%= rec ? '?rec=' + rec : '' %>">← Chi tiết lab</a>
+<h1>Đặt dịch vụ tại <%= lab.LabName %></h1>
+<% if (!services.length) { %><p class="empty">Lab chưa có gói dịch vụ.</p><% } else { %>
+<p><a href="<%= addressUrl %>">Quản lý địa chỉ lấy và trả phim</a></p>
+<form class="form" action="/orders/new" method="post">
+<input type="hidden" name="labId" value="<%= lab.LabId %>"><input type="hidden" name="rec" value="<%= rec %>">
+<h2>Chọn dịch vụ</h2><p>Nhập số lượng cho từng gói muốn đặt. Bỏ trống gói bạn không dùng.</p>
+<div class="grid"><% for (const s of services) { const format = formats.find(f => f.FormatId === s.FormatId); %>
+<fieldset class="card"><legend><%= s.PackageName %></legend>
+<p><%= format?.FormatName || s.FormatCode %> · <%= Number(s.UnitPrice).toLocaleString('vi-VN') %> đ/<%= s.PriceUnit === 'Roll' ? 'cuộn' : s.PriceUnit %></p>
+<label>Số lượng <input type="number" name="quantity[s<%= s.LabServiceId %>]" min="0" step="1"></label>
+<label>Mã loại phim (nếu biết) <input type="number" name="stock[s<%= s.LabServiceId %>]" min="1"></label>
+<label>Ghi chú gói <input name="note[s<%= s.LabServiceId %>]" maxlength="255"></label></fieldset>
+<% } %></div>
+<h2>Gửi và nhận phim</h2>
+<% for (const [method,label,local,remote,addr,localText,remoteText] of [
+ ['fulfillment','Gửi phim','DropOff','Pickup','pickupAddress','Mang đến lab','Lấy phim tại địa chỉ'],
+ ['returnMethod','Nhận lại','SelfCollect','Delivery','returnAddress','Nhận tại lab','Giao về địa chỉ']]) { %>
+<fieldset class="card"><legend><%= label %></legend>
+<label>Hình thức <select name="<%= method %>"><option value="<%= local %>"><%= localText %></option><option value="<%= remote %>" <%= list.length ? '' : 'disabled' %>><%= remoteText %></option></select></label>
+<% if (list.length) { %><label>Địa chỉ khi chọn “<%= remoteText %>” <select name="<%= addr %>">
+<% for (const a of list) { %><option value="<%= a.AddressId %>" <%= a.IsDefault ? 'selected' : '' %>><%= [a.RecipientName,a.Line1,a.Ward,a.District,a.City].join(', ') %></option><% } %></select></label>
+<% } else { %><p class="empty">Thêm địa chỉ để dùng giao nhận tận nơi.</p><% } %>
+</fieldset><% } %>
+<label>Ghi chú đơn <textarea name="customerNote" maxlength="500"></textarea></label>
+<button class="btn" type="submit">Tạo đơn</button></form><% } %>
+<%- include('../partials/footer') %>

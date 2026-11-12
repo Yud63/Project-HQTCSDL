@@ -1,0 +1,59 @@
+<%- include('../partials/header') %>
+<h1>Tìm lab tráng và scan phim</h1>
+<form class="form card" action="/labs" method="get">
+  <div class="grid">
+    <label>Khổ phim <select name="FormatId"><option value="">Tất cả</option>
+      <% for (const f of formats) { %><option value="<%= f.FormatId %>" <%= params.FormatId === f.FormatId ? 'selected' : '' %>><%= f.FormatName %></option><% } %>
+    </select></label>
+    <label>Dịch vụ <select name="ServiceTypeId"><option value="">Tất cả</option>
+      <% for (const t of types) { %><option value="<%= t.ServiceTypeId %>" <%= params.ServiceTypeId === t.ServiceTypeId ? 'selected' : '' %>><%= t.ServiceName %></option><% } %>
+    </select></label>
+    <label>Sắp xếp <select name="SortBy"><% for (const [key,label] of Object.entries(sorts)) { %><option value="<%= key %>" <%= key === params.SortBy ? 'selected' : '' %>><%= label %></option><% } %></select></label>
+  </div>
+  <details <%= ['MaxPrice','MaxTurnaroundDays','MinRating','Technique','Latitude','Longitude','MaxDistanceKm'].some(k => params[k] !== undefined) ? 'open' : '' %>>
+    <summary>Bộ lọc nâng cao</summary><div class="grid">
+    <% for (const [name,label,min,max,step] of [
+      ['MaxPrice','Giá tối đa (đ)',0,null,1],['MaxTurnaroundDays','Xử lý trong (ngày)',0,255,1],
+      ['MinRating','Điểm từ',0,5,0.01],['Latitude','Vĩ độ',-90,90,'any'],
+      ['Longitude','Kinh độ',-180,180,'any'],['MaxDistanceKm','Bán kính (km)',0,9999.99,0.01],['PageSize','Số lab mỗi trang',1,100,1]]) { %>
+      <label><%= label %><input type="number" name="<%= name %>" min="<%= min %>" max="<%= max ?? '' %>" step="<%= step %>" value="<%= params[name] ?? '' %>"></label>
+    <% } %>
+    <label>Kỹ thuật <input name="Technique" maxlength="50" value="<%= params.Technique || '' %>"></label>
+    </div><p>Điền cả vĩ độ và kinh độ để tìm theo khoảng cách.</p>
+  </details>
+  <p><button class="btn" type="submit">Tìm lab</button> <a href="/labs">Xóa bộ lọc</a></p>
+</form>
+<h2>Kết quả · Trang <%= params.PageNo %></h2>
+<% if (labs.length) { %>
+<div class="grid"><label>Tìm tên trong trang này <input type="search" id="keyword"></label>
+<label>Thành phố trong trang này <select id="city"><option value="">Tất cả</option><% for (const city of new Set(labs.map(l => l.City))) { %><option><%= city %></option><% } %></select></label></div>
+<p id="count" role="status"><%= labs.length %> lab trên trang</p>
+<div class="grid"><% for (const lab of labs) { %>
+  <article class="card" data-lab="<%= lab.LabName %>" data-city="<%= lab.City %>">
+    <p><%= lab.City %></p><h3><%= lab.LabName %></h3>
+    <p><%= lab.ReviewCount ? lab.AvgRating + '/5 · ' + lab.ReviewCount + ' đánh giá' : 'Chưa có đánh giá' %></p>
+    <p>Giá từ <strong><%= Number(lab.MinPrice).toLocaleString('vi-VN') %> đ</strong> · Nhanh nhất <%= lab.MinTurnaroundDays %> ngày</p>
+    <% if (lab.DistanceKm != null) { %><p>Cách <%= Number(lab.DistanceKm).toLocaleString('vi-VN') %> km</p><% } %>
+    <a class="btn" href="/labs/<%= lab.LabId %>">Xem chi tiết</a>
+  </article><% } %></div>
+<script>
+  const keyword = document.getElementById('keyword');
+  const city = document.getElementById('city');
+  const normalize = s => s.toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();
+  function filterPage() {
+    let count = 0;
+    for (const card of document.querySelectorAll('[data-lab]')) {
+      card.hidden = !normalize(card.dataset.lab).includes(normalize(keyword.value)) || (city.value && city.value !== card.dataset.city);
+      if (!card.hidden) count++;
+    }
+    document.getElementById('count').textContent = count ? count + ' lab trên trang' : 'Không tìm thấy lab phù hợp trên trang này.';
+  }
+  keyword.addEventListener('input', filterPage);
+  city.addEventListener('change', filterPage);
+</script>
+<% } else { %><p class="empty">Không có lab phù hợp trên trang này.</p><% } %>
+<nav class="pagination" aria-label="Phân trang">
+  <% if (params.PageNo > 1) { %><a href="<%= pageUrl(params.PageNo - 1) %>">← Trang trước</a><% } %>
+  <% if (hasNext) { %><a href="<%= pageUrl(params.PageNo + 1) %>">Trang sau →</a><% } %>
+</nav>
+<%- include('../partials/footer') %>

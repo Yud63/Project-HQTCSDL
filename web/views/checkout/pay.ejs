@@ -1,0 +1,16 @@
+<%- include('../partials/header') %>
+<h1>Thanh toán giả lập</h1>
+<section class="card"><h2>Đơn <%= order.OrderCode %></h2><p><%= order.LabName %> · <%= order.StageName %></p>
+<p>Tiền dịch vụ: <%= Number(order.Subtotal).toLocaleString('vi-VN') %> đ · Phí giao nhận: <%= Number(order.DeliveryFee).toLocaleString('vi-VN') %> đ</p>
+<p>Tổng thanh toán <strong><%= Number(order.TotalAmount).toLocaleString('vi-VN') %> đ</strong></p></section>
+<% if (order.StageId === 13) { %><p class="alert alert-warning">Đơn đã hủy.</p>
+<% } else if (order.PaymentStatus === 'Paid') { %><p class="alert alert-success">Đã thanh toán.</p>
+<% } else if (order.StageId === 1) { %><p class="alert alert-info">Đang chờ lab xác nhận. Khi lab xác nhận, tải lại trang để thanh toán.</p>
+<% } else { %>
+<form class="form card" method="post" action="/orders/<%= order.OrderId %>/pay">
+<label>Phương thức <select name="method"><option value="Card">Thẻ</option><option value="EWallet">Ví điện tử</option><option value="BankTransfer">Chuyển khoản</option></select></label>
+<label>Kết quả giả lập <select name="outcome"><option value="success">Thành công</option><option value="failure">Thất bại</option></select></label>
+<label>Lý do nếu thất bại <input name="reason" maxlength="255"></label>
+<button class="btn" type="submit">Xác nhận thanh toán giả lập</button></form><% } %>
+<p><a href="/orders/<%= order.OrderId %>">Chi tiết đơn</a> · <a href="/labs">Tiếp tục tìm lab</a></p>
+<%- include('../partials/footer') %>
