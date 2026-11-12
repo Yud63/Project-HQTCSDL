@@ -1,0 +1,45 @@
+<%- include('../partials/header') %>
+<p><a href="/owner/orders">← Quản lý đơn hàng</a></p>
+<h1>Chi tiết đơn <%= order.OrderCode %></h1>
+<div class="grid">
+<div class="card"><h2>Thông tin đơn</h2>
+<p><strong>Lab:</strong> <%= order.LabName %> · <strong>Khách hàng:</strong> <%= order.CustomerName %></p>
+<p><strong>Tiến độ:</strong> <span class="badge"><%= order.StageName %></span></p>
+<p><strong>Phương thức gửi:</strong> <%= order.FulfillmentMethod || '—' %></p>
+<p><strong>Phương thức nhận:</strong> <%= order.ReturnMethod || '—' %></p>
+<p><strong>Ngày dự kiến:</strong> <%= order.EstimatedReadyDate?new Date(order.EstimatedReadyDate).toLocaleDateString('vi-VN'):'—' %></p>
+<p><strong>Ghi chú khách:</strong> <%= order.CustomerNote || '—' %></p>
+</div>
+<div class="card"><h2>Thanh toán</h2>
+<p><strong>Trạng thái:</strong> <span class="badge <%= order.PaymentStatus==='Paid'?'badge-success':'badge-warning' %>"><%= order.PaymentStatus %></span></p>
+<p><strong>Tiền dịch vụ:</strong> <%= Number(order.Subtotal||0).toLocaleString('vi-VN') %> đ</p>
+<p><strong>Phí giao nhận:</strong> <%= Number(order.DeliveryFee||0).toLocaleString('vi-VN') %> đ</p>
+<p><strong>Tổng thanh toán:</strong> <strong><%= Number(order.TotalAmount||0).toLocaleString('vi-VN') %> đ</strong></p>
+<p class="muted">Chủ lab chỉ xem thanh toán; khách thực hiện thanh toán tại /orders/:id/pay.</p>
+</div>
+</div>
+<h2>Cập nhật tiến độ</h2>
+<form method="post" action="/owner/orders/<%= order.OrderId %>/stage" class="card form">
+<label>Chuyển sang trạng thái <select name="stageId" required><% stages.forEach(function(s){ %><option value="<%= s.StageId %>" <%= s.StageId===order.StageId?'selected':'' %>><%= s.StageName %> (<%= s.StageCode %>)</option><% }) %></select></label>
+<label>Ghi chú <textarea name="note" rows="2" maxlength="255"></textarea></label>
+<p class="muted">Chỉ chuyển trạng thái hợp lệ theo SQL; đơn chưa thanh toán đủ không thể hoàn tất.</p>
+<button type="submit" class="btn">Lưu trạng thái</button>
+</form>
+<h2>Chi tiết dịch vụ (<%= items.length %>)</h2>
+<% if(!items.length){ %><div class="card empty">Không có dòng dịch vụ.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Mã dòng</th><th>Gói dịch vụ</th><th>Phim</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody><% items.forEach(function(i){ %><tr><td>#<%= i.OrderItemId %></td><td><%= i.PackageName %></td><td><%= i.FilmStock || '—' %></td><td class="num"><%= i.Quantity %></td><td class="num"><%= Number(i.UnitPriceSnapshot||0).toLocaleString('vi-VN') %> đ</td><td class="num"><%= Number(i.LineTotal||0).toLocaleString('vi-VN') %> đ</td></tr><% }) %></tbody></table></div><% } %>
+<h2>Tải lên ảnh scan</h2>
+<form method="post" action="/owner/orders/<%= order.OrderId %>/scans" enctype="multipart/form-data" class="card form">
+<label>Ảnh JPEG / PNG / TIFF (tối đa 200 MB) <input type="file" name="scan" accept="image/jpeg,image/png,image/tiff" required></label>
+<label>Đính kèm dòng đơn (tùy chọn) <select name="orderItemId"><option value="">Không chọn</option><% items.forEach(function(i){ %><option value="<%= i.OrderItemId %>">#<%= i.OrderItemId %> – <%= i.PackageName %></option><% }) %></select></label>
+<label>Số khung phim (tùy chọn) <input type="number" name="frameNumber" min="1" max="32767"></label>
+<p class="muted">Chỉ upload khi đơn ở giai đoạn scan hợp lệ và có dịch vụ scan. File lưu riêng; metadata được ghi bằng procedure.</p>
+<button type="submit" class="btn">Tải ảnh scan</button>
+</form>
+<h2>Lịch sử tiến độ</h2>
+<% if(!timeline.length){ %><div class="card empty">Chưa có lịch sử cập nhật.</div><% } else { %><div class="table-wrap"><table class="table"><thead><tr><th>Thời gian</th><th>Trạng thái</th><th>Người thao tác</th><th>Ghi chú</th></tr></thead><tbody><% timeline.forEach(function(t){ %><tr><td><%= t.ChangedAt?new Date(t.ChangedAt).toLocaleString('vi-VN'):'—' %></td><td><%= t.ToStageName %></td><td><%= t.ChangedByName||'Hệ thống' %></td><td><%= t.Note || '—' %></td></tr><% }) %></tbody></table></div><% } %>
+<h2>Lịch sử thanh toán</h2>
+<% if(!payments.length){ %><div class="card empty">Chưa có giao dịch thanh toán.</div><% } else { %><div class="table-wrap"><table class="table"><thead><tr><th>Thời gian</th><th>Hình thức</th><th>Nhà cung cấp</th><th class="num">Số tiền</th><th>Trạng thái</th></tr></thead><tbody><% payments.forEach(function(p){ %><tr><td><%= p.PaidAt?new Date(p.PaidAt).toLocaleString('vi-VN'):'—' %></td><td><%= p.Method %></td><td><%= p.Provider || '—' %></td><td class="num"><%= Number(p.Amount||0).toLocaleString('vi-VN') %> đ</td><td><span class="badge <%= p.Status==='Paid'?'badge-success':'badge-warning' %>"><%= p.Status %></span></td></tr><% }) %></tbody></table></div><% } %>
+<h2>Giao nhận (gửi / trả)</h2>
+<% if(!deliveries.length){ %><div class="card empty">Chưa có lượt giao nhận khả dụng cho tài khoản này.</div><% } else { %><div class="table-wrap"><table class="table"><thead><tr><th>Chiều</th><th>Trạng thái</th><th>Mã vận đơn</th><th>Hẹn giao</th><th>Hoàn tất</th><th class="num">Phí</th></tr></thead><tbody><% deliveries.forEach(function(d){ %><tr><td><%= d.Direction %></td><td><%= d.Status %></td><td><%= d.ExternalTrackingCode||'—' %></td><td><%= d.ScheduledAt?new Date(d.ScheduledAt).toLocaleString('vi-VN'):'—' %></td><td><%= d.DeliveredAt?new Date(d.DeliveredAt).toLocaleString('vi-VN'):'—' %></td><td class="num"><%= Number(d.Fee||0).toLocaleString('vi-VN') %> đ</td></tr><% }) %></tbody></table></div><% } %>
+<%- include('../partials/footer') %>

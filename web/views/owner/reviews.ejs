@@ -1,0 +1,15 @@
+<%- include('../partials/header') %>
+<h1>Đánh giá khách hàng</h1>
+<p class="muted">Xem đánh giá theo chi nhánh và phản hồi bằng tài khoản chủ lab.</p>
+<form method="get" action="/owner/reviews" class="card form"><label>Chi nhánh <select name="lab"><option value="">Tất cả lab</option><% labs.forEach(function(l){ %><option value="<%= l.LabId %>" <%= labId===l.LabId?'selected':'' %>><%= l.LabName %></option><% }) %></select></label><div><button class="btn" type="submit">Lọc</button></div></form>
+<h2>Danh sách đánh giá (tối đa 100)</h2>
+<% if(!reviews.length){ %><div class="card empty">Chưa có đánh giá nào.</div><% } else { %>
+<% reviews.forEach(function(r){ %><div class="card" style="margin-bottom:12px">
+<p><strong><%= r.CustomerName %></strong> · <a href="/owner/orders/<%= r.OrderId %>"><%= r.OrderCode %></a> · <%= r.LabName %></p>
+<p><span class="badge badge-success"><%= r.RatingOverall %>/5 sao</span> · Chất lượng scan: <%= r.RatingScanQuality??'—' %> · Tốc độ: <%= r.RatingSpeed??'—' %> · <span class="badge <%= r.IsVisible?'':'badge-warning' %>"><%= r.IsVisible?'Hiển thị':'Đã ẩn' %></span></p>
+<p><%= r.Comment || '(Không có bình luận)' %></p>
+<% if(r.LabReply){ %><div class="alert alert-info"><strong>Phản hồi của lab:</strong> <%= r.LabReply %></div><% } else if(r.IsVisible){ %>
+<form method="post" class="form" action="/owner/reviews/<%= r.ReviewId %>/reply"><label>Phản hồi đánh giá <textarea required name="reply" maxlength="1000" rows="2"></textarea></label><div><button class="btn btn-sm" type="submit">Gửi phản hồi</button></div></form>
+<% } %></div><% }) %>
+<% } %>
+<%- include('../partials/footer') %>

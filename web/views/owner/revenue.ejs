@@ -1,0 +1,13 @@
+<%- include('../partials/header') %>
+<h1>Doanh thu chủ lab</h1>
+<p class="muted">Số liệu đọc trực tiếp từ <code>ord.vw_LabRevenue</code>. Doanh thu chỉ tính đơn đã hoàn tất và đã thanh toán.</p>
+<div class="grid">
+<div class="card"><div class="muted">Số đơn</div><h2><%= totals.TotalOrders.toLocaleString('vi-VN') %></h2></div>
+<div class="card"><div class="muted">Đơn hoàn thành</div><h2><%= totals.CompletedOrders.toLocaleString('vi-VN') %></h2></div>
+<div class="card"><div class="muted">Doanh thu gộp</div><h2><%= totals.GrossRevenue.toLocaleString('vi-VN') %> đ</h2></div>
+<div class="card"><div class="muted">Doanh thu ròng (sau phí nền tảng)</div><h2><%= totals.NetRevenue.toLocaleString('vi-VN') %> đ</h2></div>
+</div>
+<h2>Thống kê theo chi nhánh</h2>
+<% if(!rows.length){ %><div class="card empty">Chưa có lab hoặc số liệu doanh thu.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Lab</th><th class="num">Số đơn</th><th class="num">Hoàn thành</th><th class="num">Hủy</th><th class="num">Doanh thu gộp</th><th class="num">Phí nền tảng</th><th class="num">Phí giao nhận</th><th class="num">Doanh thu ròng</th></tr></thead><tbody><% rows.forEach(function(r){ %><tr><td><a href="/owner/orders?lab=<%= r.LabId %>"><%= r.LabName %></a></td><td class="num"><%= r.TotalOrders %></td><td class="num"><%= r.CompletedOrders %></td><td class="num"><%= r.CancelledOrders %></td><td class="num"><%= Number(r.GrossRevenue||0).toLocaleString('vi-VN') %></td><td class="num"><%= Number(r.PlatformFeeTotal||0).toLocaleString('vi-VN') %></td><td class="num"><%= Number(r.DeliveryFeeTotal||0).toLocaleString('vi-VN') %></td><td class="num"><strong><%= Number(r.NetRevenue||0).toLocaleString('vi-VN') %></strong></td></tr><% }) %></tbody></table></div><% } %>
+<%- include('../partials/footer') %>
