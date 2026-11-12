@@ -295,8 +295,13 @@ router.get('/owner/orders/:id', ownerOnly, async (req, res) => {
     order: r.recordsets[0][0], items: r.recordsets[1] || [], timeline: r.recordsets[2] || [],
     payments: r.recordsets[3] || [], deliveries: r.recordsets[4] || [],
   };
-  const reference = await refs(req);
-  return res.render('owner/order-detail', { title: 'Đơn ' + detail.order.OrderCode, ...detail, stages: reference.stages });
+  // Lấy các giai đoạn được phép cho chính đơn này, không hiển thị toàn bộ
+  // danh mục ProcessingStages (việc xác thực cuối cùng vẫn do SQL xử lý).
+  const optionsResult = await req.callProc('ord.sp_GetOwnerStageOptions', { OrderId: int(id) });
+  const stageOptions = optionsResult.recordsets[0] || [];
+  return res.render('owner/order-detail', {
+    title: 'Đơn ' + detail.order.OrderCode, ...detail, stageOptions,
+  });
 });
 router.post('/owner/orders/:id/stage', ownerOnly, async (req, res) => {
   const id = positiveId(req.params.id);
