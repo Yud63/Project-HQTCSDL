@@ -349,7 +349,7 @@ async function checkOwnOrder(req, res, next) {
   ownedLab(data, order.LabId);
   next();
 }
-router.post('/owner/orders/:id/scans', ownerOnly, checkOwnOrder, uploadOne, async (req, res) => {
+router.post('/owner/orders/:id/scans', ownerOnly, uploadOne, checkOwnOrder, async (req, res) => {
   const id = positiveId(req.params.id);
   const file = req.file;
   if (!file) throw new HttpError(400, 'Vui lòng chọn ảnh scan.');
