@@ -1,0 +1,22 @@
+<%- include('../partials/header') %>
+<h1>Lab của tôi</h1>
+<p class="muted">Tạo và quản lý các chi nhánh thuộc tài khoản của bạn. Thông tin được lưu trong SQL Server.</p>
+<p><a class="btn" href="/owner/labs/new">+ Tạo lab mới</a> <a class="btn btn-outline" href="/owner/orders">Xem đơn hàng</a> <a class="btn btn-outline" href="/owner/revenue">Doanh thu</a></p>
+<% if (!labs.length) { %>
+  <div class="card empty"><h2>Chưa có lab</h2><p>Bạn chưa tạo lab nào. Chọn “Tạo lab mới” để bắt đầu.</p></div>
+<% } else { %>
+<div class="grid">
+  <% labs.forEach(function(lab) { const count=services.filter(s=>s.LabId===lab.LabId).length; %>
+  <div class="card">
+    <h2><%= lab.LabName %></h2>
+    <p><span class="badge <%= lab.ApprovalStatus==='Approved'?'badge-success':lab.ApprovalStatus==='Rejected'?'badge-danger':'badge-warning' %>"><%= lab.ApprovalStatus %></span></p>
+    <p><%= [lab.AddressLine,lab.Ward,lab.District,lab.City].filter(Boolean).join(', ') %></p>
+    <p class="muted"><%= count %> dịch vụ · <%= lab.ReviewCount || 0 %> đánh giá · <%= lab.AvgRating == null ? 'Chưa có điểm' : lab.AvgRating + '/5' %></p>
+    <% if (lab.LastDecisionReason) { %><div class="alert alert-warning"><%= lab.LastDecisionReason %></div><% } %>
+    <p><a class="btn btn-sm" href="/owner/labs/<%= lab.LabId %>/edit">Sửa thông tin</a> <a class="btn btn-outline btn-sm" href="/owner/labs/<%= lab.LabId %>/services">Dịch vụ</a></p>
+    <p><a href="/owner/orders?lab=<%= lab.LabId %>">Xem đơn hàng của lab →</a></p>
+  </div>
+  <% }) %>
+</div>
+<% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<h1>Quản lý đơn hàng</h1>
+<p class="muted">Đơn hàng từ khách được lưu và cập nhật trên SQL Server. Khách tạo đơn ở <code>/orders/new</code>; chủ lab xử lý đơn tại đây.</p>
+<p><a class="btn btn-outline" href="/owner/labs">Danh sách lab</a> <a class="btn btn-outline" href="/owner/revenue">Doanh thu</a></p>
+<form method="get" action="/owner/orders" class="card form">
+<label>Chi nhánh <select name="lab"><option value="">Tất cả lab</option><% labs.forEach(function(l){ %><option value="<%= l.LabId %>" <%= labId===l.LabId?'selected':'' %>><%= l.LabName %></option><% }) %></select></label>
+<label>Trạng thái <select name="stage"><option value="">Tất cả trạng thái</option><% stages.forEach(function(s){ %><option value="<%= s.StageCode %>" <%= stageCode===s.StageCode?'selected':'' %>><%= s.StageName %></option><% }) %></select></label>
+<div><button class="btn" type="submit">Lọc đơn</button> <a class="btn btn-outline" href="/owner/orders">Xóa lọc</a></div>
+</form>
+<h2>Danh sách đơn <span class="muted">(<%= totalRows %> kết quả)</span></h2>
+<% if (!orders.length){ %><div class="card empty">Chưa có đơn hàng phù hợp với bộ lọc.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Mã đơn</th><th>Chi nhánh</th><th>Khách hàng</th><th>Trạng thái</th><th>Thanh toán</th><th>Gửi / nhận</th><th class="num">Tổng tiền</th><th>Ngày tạo</th></tr></thead><tbody>
+<% orders.forEach(function(o){ %><tr>
+<td><a href="/owner/orders/<%= o.OrderId %>"><strong><%= o.OrderCode %></strong></a></td><td><%= o.LabName || o.LabId %></td>
+<td><%= o.CustomerName || ('#'+o.CustomerId) %></td>
+<td><span class="badge"><%= o.StageName || o.StageCode || o.StageId %></span></td>
+<td><span class="badge <%= o.PaymentStatus==='Paid'?'badge-success':'badge-warning' %>"><%= o.PaymentStatus %></span></td>
+<td><%= o.FulfillmentMethod || '—' %> / <%= o.ReturnMethod || '—' %></td>
+<td class="num"><%= Number(o.TotalAmount||0).toLocaleString('vi-VN') %> đ</td>
+<td><%= o.CreatedAt ? new Date(o.CreatedAt).toLocaleDateString('vi-VN') : '—' %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<% if(pageCount>1){ %><nav class="pagination" aria-label="Phân trang đơn hàng"><% for(let n=Math.max(1,page-2);n<=Math.min(pageCount,page+2);n++){ %><a class="<%= n===page?'active':'' %>" href="/owner/orders?lab=<%= labId||'' %>&amp;stage=<%= encodeURIComponent(stageCode||'') %>&amp;page=<%= n %>"><%= n %></a><% } %></nav><% } %>
+<h2>Đơn đang xử lý (tối đa 100)</h2>
+<% if(!active.length){ %><div class="card empty">Không có đơn đang xử lý.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Mã đơn</th><th>Chi nhánh</th><th>Tiến độ</th><th>Số ngày xử lý</th><th>Dự kiến</th></tr></thead><tbody>
+<% active.forEach(function(o){ %><tr><td><a href="/owner/orders/<%= o.OrderId %>"><%= o.OrderCode %></a></td><td><%= labs.find(l=>l.LabId===o.LabId)?.LabName || o.LabId %></td><td><%= o.StageName %></td><td><%= o.DaysInProgress %></td><td><%= o.EstimatedReadyDate?new Date(o.EstimatedReadyDate).toLocaleDateString('vi-VN'):'—' %></td></tr><% }) %>
+</tbody></table></div><% } %>
+<%- include('../partials/footer') %>

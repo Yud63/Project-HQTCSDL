@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+<p><a href="/owner/labs">← Lab của tôi</a></p>
+<h1>Dịch vụ – <%= lab.LabName %></h1>
+<p class="muted">Thay đổi giá, loại phim và trạng thái dịch vụ. Mọi thay đổi được ghi vào FilmLabDB.</p>
+<h2><%= form.labServiceId ? 'Sửa dịch vụ #' + form.labServiceId : 'Thêm dịch vụ' %></h2>
+<form method="post" class="card form" action="/owner/labs/<%= lab.LabId %>/services">
+ <input type="hidden" name="labServiceId" value="<%= form.labServiceId || '' %>">
+ <label>Tên gói * <input name="packageName" maxlength="150" required value="<%= form.packageName || '' %>"></label>
+ <label>Loại dịch vụ * <select name="serviceTypeId" required><option value="">Chọn loại dịch vụ</option><% types.forEach(function(t) { %><option value="<%= t.ServiceTypeId %>" <%= String(form.serviceTypeId)===String(t.ServiceTypeId)?'selected':'' %>><%= t.ServiceName %> (<%= t.Category %>)</option><% }) %></select></label>
+ <label>Khổ phim * <select name="formatId" required><option value="">Chọn khổ phim</option><% formats.forEach(function(f) { %><option value="<%= f.FormatId %>" <%= String(form.formatId)===String(f.FormatId)?'selected':'' %>><%= f.FormatName %> (<%= f.FormatCode %>)</option><% }) %></select></label>
+ <label>Giá (VND) * <input name="unitPrice" type="number" step="1" min="0" max="999999999999" required value="<%= form.unitPrice %>"></label>
+ <label>Đơn vị tính * <select name="priceUnit"><% ['Roll','Frame'].forEach(function(x){ %><option value="<%= x %>" <%= form.priceUnit===x?'selected':'' %>><%= x==='Roll'?'Cuộn':'Khung hình' %></option><% }) %></select></label>
+ <label>Thời gian xử lý (ngày) * <input name="turnaroundDays" type="number" min="1" max="60" required value="<%= form.turnaroundDays || 3 %>"></label>
+ <label>Quy trình xử lý <select name="processCode"><% ['ANY','C-41','E-6','BW','ECN-2'].forEach(function(x){ %><option value="<%= x %>" <%= form.processCode===x?'selected':'' %>><%= x %></option><% }) %></select></label>
+ <label>Chất lượng scan <select name="scanQuality"><option value="">Không áp dụng</option><% ['Basic','High','Ultra'].forEach(function(x){ %><option value="<%= x %>" <%= form.scanQuality===x?'selected':'' %>><%= x %></option><% }) %></select></label>
+ <label>Mô tả <textarea name="description" maxlength="500" rows="3"><%= form.description || '' %></textarea></label>
+ <label><span><input type="checkbox" name="isActive" value="1" <%= form.isActive ? 'checked' : '' %>> Đang cung cấp</span></label>
+ <div><button type="submit" class="btn">Lưu dịch vụ</button> <% if(form.labServiceId){ %><a class="btn btn-outline" href="/owner/labs/<%= lab.LabId %>/services">Hủy sửa</a><% } %></div>
+</form>
+<h2>Danh sách dịch vụ (<%= services.length %>)</h2>
+<% if (!services.length) { %><div class="card empty">Lab này chưa có dịch vụ nào.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Gói dịch vụ</th><th>Loại / khổ phim</th><th>Giá</th><th>Hoàn thành</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+<% services.forEach(function(s){ %><tr>
+<td><strong><%= s.PackageName %></strong><div class="muted"><%= s.ProcessCode %> · <%= s.ScanQuality || '—' %></div></td>
+<td><%= s.ServiceName %><div class="muted"><%= s.FormatName %></div></td>
+<td class="num"><%= Number(s.UnitPrice || 0).toLocaleString('vi-VN') %> đ/<%= s.PriceUnit %></td>
+<td><%= s.TurnaroundDays %> ngày</td>
+<td><span class="badge <%= s.IsActive?'badge-success':'badge-warning' %>"><%= s.IsActive?'Đang bán':'Đã ẩn' %></span></td>
+<td><a class="btn btn-sm btn-outline" href="/owner/labs/<%= lab.LabId %>/services?edit=<%= s.LabServiceId %>">Sửa</a>
+<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/toggle"><button class="btn btn-sm btn-outline" type="submit"><%= s.IsActive?'Ẩn':'Bật' %></button></form>
+<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/delete" onsubmit="return confirm('Xóa mềm dịch vụ này?')"><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
+</td></tr><% }) %></tbody></table></div><% } %>
+<%- include('../partials/footer') %>

@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<p><a href="/owner/labs">← Danh sách lab</a></p>
+<h1><%= editing ? 'Chỉnh sửa hồ sơ lab' : 'Tạo lab mới' %></h1>
+<% if (editing) { %><p>Trạng thái duyệt: <span class="badge"><%= approval %></span> · <a href="/owner/labs/<%= labId %>/services">Quản lý dịch vụ</a> · <a href="/owner/orders?lab=<%= labId %>">Đơn hàng lab</a></p><% } else { %><p class="muted">Lab mới sẽ ở trạng thái chờ Admin duyệt.</p><% } %>
+<form method="post" class="form" action="<%= editing ? '/owner/labs/'+labId+'/edit' : '/owner/labs/new' %>">
+  <label>Tên lab * <input name="labName" maxlength="150" required value="<%= lab.labName || '' %>"></label>
+  <label>Địa chỉ * <input name="addressLine" maxlength="255" required value="<%= lab.addressLine || '' %>"></label>
+  <label>Phường / xã * <input name="ward" maxlength="100" required value="<%= lab.ward || '' %>"></label>
+  <label>Quận / huyện * <input name="district" maxlength="100" required value="<%= lab.district || '' %>"></label>
+  <label>Tỉnh / thành phố * <input name="city" maxlength="100" required value="<%= lab.city || '' %>"></label>
+  <label>Điện thoại <input type="tel" name="phone" maxlength="20" value="<%= lab.phone || '' %>"></label>
+  <label>Email <input type="email" name="email" maxlength="255" value="<%= lab.email || '' %>"></label>
+  <label>Mô tả <textarea name="description" rows="4" maxlength="1000"><%= lab.description || '' %></textarea></label>
+  <label>Công suất (cuộn/ngày) * <input type="number" name="dailyCapacityRolls" min="1" max="32767" required value="<%= lab.dailyCapacityRolls || 50 %>"></label>
+  <label>Giờ mở cửa (JSON, tùy chọn) <textarea name="openHoursJson" rows="3" placeholder='{"mon":"08:00-18:00"}'><%= lab.openHoursJson || '' %></textarea></label>
+  <label>Kỹ thuật đặc biệt (JSON, tùy chọn) <textarea name="specialTechniques" rows="3" placeholder='["Cross processing"]'><%= lab.specialTechniques || '' %></textarea></label>
+  <label>Vĩ độ <input type="number" name="latitude" min="-90" max="90" step="any" value="<%= lab.latitude == null ? '' : lab.latitude %>"></label>
+  <label>Kinh độ <input type="number" name="longitude" min="-180" max="180" step="any" value="<%= lab.longitude == null ? '' : lab.longitude %>"></label>
+  <div><button class="btn" type="submit">Lưu thông tin</button> <a class="btn btn-outline" href="/owner/labs">Hủy</a></div>
+</form>
+<%- include('../partials/footer') %>
