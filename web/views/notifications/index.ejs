@@ -1,0 +1,83 @@
+<%- include('../partials/header', { title: 'Hộp thư thông báo' }) %>
+
+<div class="orders-header">
+  <div>
+    <h1 class="orders-title">
+      <span>Thông báo</span>
+      <% if (unreadCount > 0) { %>
+        <span class="nav-badge" style="font-size: 0.85rem; padding: 4px 10px;"><%= unreadCount %> mới</span>
+      <% } %>
+    </h1>
+    <p style="color: var(--text-secondary); margin-top: 4px; font-size: 0.95rem;">
+      Cập nhật tiến độ chuyển giai đoạn đơn hàng, thanh toán và link tải ảnh scan.
+    </p>
+  </div>
+</div>
+
+<!-- Tabs bộ lọc trạng thái đọc -->
+<div class="stage-filter-bar">
+  <a href="/notifications" class="stage-filter-item <%= filter === 'all' ? 'active' : '' %>">
+    Tất cả (<%= totalCount %>)
+  </a>
+  <a href="/notifications?filter=unread" class="stage-filter-item <%= filter === 'unread' ? 'active' : '' %>">
+    Chưa đọc (<%= unreadCount %>)
+  </a>
+  <a href="/notifications?filter=read" class="stage-filter-item <%= filter === 'read' ? 'active' : '' %>">
+    Đã đọc (<%= totalCount - unreadCount %>)
+  </a>
+</div>
+
+<% if (notifications.length === 0) { %>
+  <div class="card" style="text-align: center; padding: 60px 20px;">
+    <div style="font-size: 3rem; margin-bottom: 16px;">📫</div>
+    <h3>Không có thông báo nào</h3>
+    <p style="color: var(--text-muted); margin-top: 6px;">
+      Bạn đã đọc hết tất cả thông báo hoặc chưa có cập nhật mới.
+    </p>
+  </div>
+<% } else { %>
+  <div class="notifications-list">
+    <% notifications.forEach(function(n) { %>
+      <div class="notification-card <%= !n.IsRead ? 'unread' : '' %>">
+        <% if (!n.IsRead) { %>
+          <div class="notif-unread-dot" title="Chưa đọc"></div>
+        <% } %>
+
+        <div class="notif-content">
+          <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+            <span class="film-tag <%= n.Type === 'OrderStage' ? 'c41' : (n.Type === 'ScanReady' ? 'ecn2' : 'bw') %>">
+              <%= n.Type %>
+            </span>
+            <span class="notif-title"><%= n.Title %></span>
+          </div>
+
+          <div class="notif-body">
+            <%= n.Body %>
+          </div>
+
+          <div class="notif-time">
+            <%= new Date(n.CreatedAt).toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) %>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
+          <% if (n.OrderId) { %>
+            <a href="/orders/<%= n.OrderId %>" class="btn btn-secondary btn-sm">
+              Xem đơn #<%= n.OrderId %>
+            </a>
+          <% } %>
+
+          <% if (!n.IsRead) { %>
+            <form action="/notifications/<%= n.NotificationId %>/read" method="POST" style="margin: 0;">
+              <button type="submit" class="btn btn-outline btn-sm" title="Đánh dấu đã đọc">
+                ✓ Đã đọc
+              </button>
+            </form>
+          <% } %>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<%- include('../partials/footer') %>

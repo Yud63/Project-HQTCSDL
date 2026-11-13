@@ -1,0 +1,160 @@
+<%- include('../partials/header', { title: 'Đơn hàng của tôi' }) %>
+
+<div class="orders-header">
+  <div>
+    <h1 class="orders-title">
+      <span>Đơn hàng của tôi</span>
+      <span class="orders-count-badge"><%= totalCount %> đơn</span>
+    </h1>
+    <p style="color: var(--text-secondary); margin-top: 4px; font-size: 0.95rem;">
+      Theo dõi tiến trình 13 giai đoạn tráng rọi và chất lượng số hóa phim của bạn.
+    </p>
+  </div>
+  <div>
+    <a href="/labs" class="btn btn-primary">
+      <span>+ Đặt đơn tráng phim mới</span>
+    </a>
+  </div>
+</div>
+
+<!-- Thanh bộ lọc Stage -->
+<div class="stage-filter-bar">
+  <a href="/orders" class="stage-filter-item <%= !currentStage ? 'active' : '' %>">Tất cả đơn</a>
+  <a href="/orders?stage=Pending" class="stage-filter-item <%= currentStage === 'Pending' ? 'active' : '' %>">Chờ xác nhận</a>
+  <a href="/orders?stage=AwaitingFilm" class="stage-filter-item <%= currentStage === 'AwaitingFilm' ? 'active' : '' %>">Chờ gửi phim</a>
+  <a href="/orders?stage=Developing" class="stage-filter-item <%= currentStage === 'Developing' ? 'active' : '' %>">Đang tráng hóa chất</a>
+  <a href="/orders?stage=Scanning" class="stage-filter-item <%= currentStage === 'Scanning' ? 'active' : '' %>">Đang scan</a>
+  <a href="/orders?stage=ReadyToReturn" class="stage-filter-item <%= currentStage === 'ReadyToReturn' ? 'active' : '' %>">Sẵn sàng trả</a>
+  <a href="/orders?stage=Completed" class="stage-filter-item <%= currentStage === 'Completed' ? 'active' : '' %>">Đã hoàn tất</a>
+  <a href="/orders?stage=Cancelled" class="stage-filter-item <%= currentStage === 'Cancelled' ? 'active' : '' %>">Đã hủy</a>
+</div>
+
+<% if (orders.length === 0) { %>
+  <div class="card" style="text-align: center; padding: 60px 20px;">
+    <div style="font-size: 3rem; margin-bottom: 16px;">🎞️</div>
+    <h3 style="margin-bottom: 8px;">Chưa tìm thấy đơn hàng nào</h3>
+    <p style="color: var(--text-muted); margin-bottom: 24px; max-width: 450px; margin-left: auto; margin-right: auto;">
+      <% if (currentStage) { %>
+        Không có đơn hàng nào ở trạng thái này. Thử chọn "Tất cả đơn" để xem toàn bộ lịch sử.
+      <% } else { %>
+        Bạn chưa gửi cuộn phim nào cho phòng Lab. Hãy chọn phòng Lab uy tín để bắt đầu cuộn phim đầu tiên nhé!
+      <% } %>
+    </p>
+    <% if (currentStage) { %>
+      <a href="/orders" class="btn btn-secondary">Xem tất cả đơn</a>
+    <% } else { %>
+      <a href="/labs" class="btn btn-primary">Khám phá các phòng Lab</a>
+    <% } %>
+  </div>
+<% } else { %>
+  <div class="orders-grid">
+    <% orders.forEach(function(o) { %>
+      <div class="order-card">
+        <div class="order-card-header">
+          <div class="order-code-group">
+            <span class="order-code"><%= o.OrderCode || ('ORD-' + o.OrderId) %></span>
+            <span class="order-date"><%= new Date(o.CreatedAt).toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) %></span>
+          </div>
+
+          <div>
+            <% 
+              let badgeClass = 'pending';
+              if (['Developing', 'Scanning', 'Washing', 'Drying', 'ImagePrep', 'QualityCheck'].includes(o.StageCode)) {
+                badgeClass = 'processing';
+              } else if (o.StageCode === 'Completed') {
+                badgeClass = 'completed';
+              } else if (o.StageCode === 'Cancelled') {
+                badgeClass = 'cancelled';
+              }
+            %>
+            <span class="status-badge <%= badgeClass %>">
+              <span class="status-dot <%= badgeClass === 'processing' ? 'pulse' : '' %>"></span>
+              <span><%= o.StageName || o.StageCode %></span>
+            </span>
+          </div>
+        </div>
+
+        <div class="order-card-body">
+          <div>
+            <div class="order-prop-label">Phòng Lab thực hiện</div>
+            <div class="order-prop-value" style="color: var(--text-primary); font-weight: 600;">
+              <%= o.LabName %>
+            </div>
+          </div>
+
+          <div>
+            <div class="order-prop-label">Quy mô gói</div>
+            <div class="order-prop-value">
+              <%= o.TotalRolls || o.TotalItems || 1 %> cuộn phim
+            </div>
+          </div>
+
+          <div>
+            <div class="order-prop-label">Giao nhận</div>
+            <div class="order-prop-value">
+              <%= o.FulfillmentMethod === 'Pickup' ? 'Shipper lấy phim' : 'Gửi tại quầy' %> → 
+              <%= o.ReturnMethod === 'Delivery' ? 'Giao phim tận nơi' : 'Nhận tại quầy' %>
+            </div>
+          </div>
+
+          <div>
+            <div class="order-prop-label">Tổng thanh toán</div>
+            <div class="order-price">
+              <%= Number(o.TotalAmount).toLocaleString('vi-VN') %> đ
+              <span style="font-size: 0.75rem; font-weight: normal; color: <%= o.PaymentStatus === 'Paid' ? 'var(--color-success)' : 'var(--accent-gold)' %>">
+                (<%= o.PaymentStatus === 'Paid' ? 'Đã thanh toán' : 'Chưa thanh toán' %>)
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-card-footer">
+          <div style="font-size: 0.85rem; color: var(--text-muted);">
+            <% if (o.StageCode === 'Completed' && o.CompletedAt) { %>
+              Hoàn tất ngày <%= new Date(o.CompletedAt).toLocaleDateString('vi-VN') %>
+            <% } else if (o.EstimatedReadyDate) { %>
+              Dự kiến xong: <%= new Date(o.EstimatedReadyDate).toLocaleDateString('vi-VN') %>
+            <% } else if (o.CancelReason) { %>
+              Lý do hủy: <%= o.CancelReason %>
+            <% } %>
+          </div>
+
+          <div style="display: flex; gap: 8px;">
+            <% if (o.StageCode === 'Completed') { %>
+              <% if (!o.HasReview) { %>
+                <a href="/orders/<%= o.OrderId %>/review" class="btn btn-primary btn-sm">
+                  ⭐ Đánh giá
+                </a>
+              <% } %>
+            <% } %>
+
+            <a href="/orders/<%= o.OrderId %>" class="btn btn-secondary btn-sm">
+              Chi tiết & Tiến trình →
+            </a>
+          </div>
+        </div>
+      </div>
+    <% }); %>
+  </div>
+
+  <!-- Phân trang -->
+  <% if (totalPages > 1) { %>
+    <div class="pagination">
+      <% if (currentPage > 1) { %>
+        <a href="/orders?page=<%= currentPage - 1 %><%= currentStage ? '&stage=' + currentStage : '' %>" class="page-item">« Trước</a>
+      <% } %>
+
+      <% for (let p = 1; p <= totalPages; p++) { %>
+        <a href="/orders?page=<%= p %><%= currentStage ? '&stage=' + currentStage : '' %>" class="page-item <%= p === currentPage ? 'active' : '' %>">
+          <%= p %>
+        </a>
+      <% } %>
+
+      <% if (currentPage < totalPages) { %>
+        <a href="/orders?page=<%= currentPage + 1 %><%= currentStage ? '&stage=' + currentStage : '' %>" class="page-item">Sau »</a>
+      <% } %>
+    </div>
+  <% } %>
+<% } %>
+
+<%- include('../partials/footer') %>

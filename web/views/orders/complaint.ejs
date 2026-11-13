@@ -1,0 +1,64 @@
+<%- include('../partials/header', { title: 'Gửi khiếu nại đơn hàng' }) %>
+
+<div class="review-form-card card">
+  <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 24px;">
+    <h1 style="font-size: 1.5rem; color: var(--color-danger); margin-bottom: 6px; display: flex; align-items: center; gap: 8px;">
+      <span>⚠️ Gửi khiếu nại đơn hàng</span>
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      Đơn hàng: <strong style="color: var(--accent-gold); font-family: var(--font-mono);"><%= order.OrderCode || ('ORD-' + order.OrderId) %></strong> · 
+      Phòng Lab: <strong style="color: var(--text-primary);"><%= order.LabName %></strong>
+    </p>
+  </div>
+
+  <div class="alert alert-warning" style="margin-bottom: 24px;">
+    <div style="font-size: 0.875rem;">
+      <strong>Chính sách bảo vệ khách hàng FilmLabDB:</strong> Khiếu nại của bạn sẽ được chuyển đồng thời đến Quản trị viên nền tảng (Admin) và Phòng Lab để cùng xử lý, đền bù hoặc scan lại miễn phí theo quy chuẩn.
+    </div>
+  </div>
+
+  <form action="/orders/<%= order.OrderId %>/complaint" method="POST">
+    <!-- Phân loại khiếu nại -->
+    <div class="form-group">
+      <label for="complaintCategory" class="form-label">
+        Danh mục khiếu nại <span style="color: var(--color-danger);">*</span>
+      </label>
+      <select id="complaintCategory" name="category" class="form-control" required>
+        <option value="">-- Chọn vấn đề bạn gặp phải --</option>
+        <option value="ScanQuality">Chất lượng Scan (Lỗi màu, nhiều bụi xước, crop mất hình, out nét)</option>
+        <option value="DamagedFilm">Hỏng phim (Xước nhũ tương sâu, đứt phim, dính hóa chất)</option>
+        <option value="LostFilm">Thất lạc / Mất cuộn phim</option>
+        <option value="Delay">Chậm trễ tiến độ (Quá ngày hẹn cam kết)</option>
+        <option value="Billing">Sai lệch chi phí / Vấn đề thanh toán</option>
+        <option value="Service">Thái độ phục vụ của nhân viên phòng Lab</option>
+        <option value="Other">Vấn đề khác</option>
+      </select>
+    </div>
+
+    <!-- Tiêu đề khiếu nại -->
+    <div class="form-group">
+      <label for="complaintTitle" class="form-label">
+        Tiêu đề khiếu nại tóm tắt <span style="color: var(--color-danger);">*</span>
+      </label>
+      <input type="text" id="complaintTitle" name="title" class="form-control" placeholder="Ví dụ: Scan bị ám màu xanh lá nặng và bụi bẩn trên cuộn số 1" minlength="5" maxlength="150" required>
+    </div>
+
+    <!-- Nội dung chi tiết -->
+    <div class="form-group">
+      <label for="complaintDesc" class="form-label">
+        Mô tả chi tiết sự việc <span style="color: var(--color-danger);">*</span>
+      </label>
+      <textarea id="complaintDesc" name="description" class="form-control" rows="5" placeholder="Vui lòng mô tả cụ thể frame bị ảnh hưởng, thời gian nhận phim và mong muốn hướng giải quyết (Scan lại, Hoàn tiền, Đền cuộn phim mới)..." minlength="10" maxlength="2000" required></textarea>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: right;">
+        Tối đa 2000 ký tự
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+      <a href="/orders/<%= order.OrderId %>" class="btn btn-secondary">Hủy bỏ</a>
+      <button type="submit" class="btn btn-danger">Gửi khiếu nại tới BQT</button>
+    </div>
+  </form>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,331 @@
+<%- include('../partials/header', { title: 'Đơn hàng #' + (order.OrderCode || order.OrderId) + '' }) %>
+
+<div class="order-detail-header">
+  <div class="detail-top-row">
+    <div>
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 6px;">
+        <h1 style="font-size: 1.6rem; font-family: var(--font-mono); color: var(--accent-gold);">
+          <%= order.OrderCode || ('ORD-' + order.OrderId) %>
+        </h1>
+        <% 
+          let badgeClass = 'pending';
+          if (['Developing', 'Scanning', 'Washing', 'Drying', 'ImagePrep', 'QualityCheck'].includes(order.StageCode)) {
+            badgeClass = 'processing';
+          } else if (order.StageCode === 'Completed') {
+            badgeClass = 'completed';
+          } else if (order.StageCode === 'Cancelled') {
+            badgeClass = 'cancelled';
+          }
+        %>
+        <span class="status-badge <%= badgeClass %>">
+          <span class="status-dot <%= badgeClass === 'processing' ? 'pulse' : '' %>"></span>
+          <span><%= order.StageName || order.StageCode %></span>
+        </span>
+      </div>
+
+      <div style="color: var(--text-muted); font-size: 0.875rem;">
+        Khởi tạo lúc: <%= new Date(order.CreatedAt).toLocaleString('vi-VN') %>
+        <% if (order.EstimatedReadyDate) { %>
+          · <strong style="color: var(--accent-amber);">Dự kiến sẵn sàng: <%= new Date(order.EstimatedReadyDate).toLocaleDateString('vi-VN') %></strong>
+        <% } %>
+      </div>
+    </div>
+
+    <!-- Nút tự động tải lại trang theo dõi tiến độ (Auto-refresh 20s) -->
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div class="auto-refresh-pill">
+        <span class="refresh-spin-icon">⏳</span>
+        <span>Tự động cập nhật sau <strong id="autoRefreshCountdown">20s</strong></span>
+      </div>
+      <button type="button" id="manualRefreshBtn" class="btn btn-secondary btn-sm" title="Tải lại ngay">🔄 Làm mới</button>
+      <button type="button" id="autoRefreshToggle" class="btn btn-outline btn-sm">Tạm dừng</button>
+    </div>
+  </div>
+
+  <!-- Thông tin Lab và Khách hàng -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color);">
+    <div>
+      <div class="order-prop-label">Phòng Lab thực hiện</div>
+      <div class="order-prop-value" style="font-weight: 600; color: var(--text-primary);"><%= order.LabName %></div>
+      <div style="font-size: 0.85rem; color: var(--text-secondary);"><%= order.LabAddress %></div>
+      <% if (order.LabPhone) { %>
+        <div style="font-size: 0.85rem; color: var(--accent-gold);">📞 <%= order.LabPhone %></div>
+      <% } %>
+    </div>
+
+    <div>
+      <div class="order-prop-label">Phương thức lấy phim</div>
+      <div class="order-prop-value">
+        <%= order.FulfillmentMethod === 'Pickup' ? '🚚 Shipper tới lấy phim' : '🏢 Khách gửi tại quầy Lab' %>
+      </div>
+      <% if (order.PickupAddressText) { %>
+        <div style="font-size: 0.85rem; color: var(--text-muted);"><%= order.PickupAddressText %></div>
+      <% } %>
+    </div>
+
+    <div>
+      <div class="order-prop-label">Phương thức trả ảnh / negative</div>
+      <div class="order-prop-value">
+        <%= order.ReturnMethod === 'Delivery' ? '📦 Giao negative về nhà' : '🤝 Nhận lại tại quầy Lab' %>
+      </div>
+      <% if (order.ReturnAddressText) { %>
+        <div style="font-size: 0.85rem; color: var(--text-muted);"><%= order.ReturnAddressText %></div>
+      <% } %>
+    </div>
+
+    <div>
+      <div class="order-prop-label">Thanh toán</div>
+      <div class="order-prop-value">
+        <span style="color: <%= order.PaymentStatus === 'Paid' ? 'var(--color-success)' : 'var(--accent-gold)' %>; font-weight: 700;">
+          <%= order.PaymentStatus === 'Paid' ? 'ĐÃ THANH TOÁN' : 'CHƯA THANH TOÁN' %>
+        </span>
+      </div>
+      <div style="font-size: 0.85rem; color: var(--text-muted);">
+        Tổng: <strong style="color: var(--accent-gold);"><%= Number(order.TotalAmount).toLocaleString('vi-VN') %> đ</strong>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+     TIMELINE 13 GIAI ĐOẠN XỬ LÝ CHUẨN (FilmLabDB Standard)
+     ============================================================ -->
+<div class="timeline-section">
+  <div class="timeline-title">
+    <span>Tiến độ xử lý phim buồng tối (13 giai đoạn chuẩn)</span>
+    <span style="font-size: 0.85rem; font-weight: normal; color: var(--text-muted);">
+      Stage hiện tại: <strong style="color: var(--accent-gold);"><%= order.StageName || order.StageCode %></strong>
+    </span>
+  </div>
+
+  <% if (order.StageId === 13) { %>
+    <!-- Trường hợp đơn đã hủy -->
+    <div class="alert alert-error" style="margin-bottom: 20px;">
+      <div>
+        <strong>Đơn hàng đã được hủy</strong>: <%= order.CancelReason || 'Không có lý do chi tiết' %>
+      </div>
+    </div>
+  <% } %>
+
+  <div class="timeline-track">
+    <% timeline.forEach(function(step, index) { %>
+      <div class="timeline-step <%= step.StepStatus %> <%= (order.StageId === 13 && step.StageId === 13) ? 'cancelled' : '' %>">
+        <div class="timeline-icon-box">
+          <% if (step.StepStatus === 'completed') { %>
+            ✓
+          <% } else if (step.StepStatus === 'active') { %>
+            ●
+          <% } else { %>
+            <%= index + 1 %>
+          <% } %>
+        </div>
+
+        <div class="timeline-label">
+          <%= step.StageName %>
+        </div>
+
+        <% if (step.ChangedAt) { %>
+          <div class="timeline-time">
+            <%= new Date(step.ChangedAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) %><br>
+            <%= new Date(step.ChangedAt).toLocaleDateString('vi-VN', { month: 'numeric', day: 'numeric' }) %>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+</div>
+
+<!-- Danh sách các cuộn phim / gói dịch vụ trong đơn -->
+<div class="card" style="margin-bottom: 24px;">
+  <h3 style="margin-bottom: 16px; font-size: 1.15rem; color: var(--text-primary);">
+    Danh sách cuộn phim & Gói dịch vụ
+  </h3>
+
+  <div style="overflow-x: auto;">
+    <table class="order-items-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Gói dịch vụ & Loại phim</th>
+          <th>Định dạng</th>
+          <th>Quy trình hóa chất</th>
+          <th>Chất lượng Scan</th>
+          <th style="text-align: center;">Số lượng</th>
+          <th style="text-align: right;">Đơn giá</th>
+          <th style="text-align: right;">Thành tiền</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% if (items.length === 0) { %>
+          <tr>
+            <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">
+              Chưa có chi tiết cuộn phim.
+            </td>
+          </tr>
+        <% } else { %>
+          <% items.forEach(function(item, idx) { %>
+            <tr>
+              <td><%= idx + 1 %></td>
+              <td>
+                <strong><%= item.PackageName %></strong>
+                <% if (item.ProcessingNote) { %>
+                  <div style="font-size: 0.8rem; color: var(--accent-amber); margin-top: 2px;">
+                    📝 Yêu cầu: <%= item.ProcessingNote %>
+                  </div>
+                <% } %>
+              </td>
+              <td><%= item.FormatName || '135 (35mm)' %></td>
+              <td>
+                <% 
+                  let pCode = (item.ProcessCode || 'C-41').toLowerCase();
+                  let tagClass = 'c41';
+                  if (pCode.includes('ecn')) tagClass = 'ecn2';
+                  else if (pCode.includes('bw') || pCode.includes('đen')) tagClass = 'bw';
+                  else if (pCode.includes('e-6') || pCode.includes('e6')) tagClass = 'e6';
+                %>
+                <span class="film-tag <%= tagClass %>"><%= item.ProcessCode || 'C-41' %></span>
+              </td>
+              <td><%= item.ScanQuality || 'Tiêu chuẩn' %></td>
+              <td style="text-align: center;"><%= item.Quantity %> cuộn</td>
+              <td style="text-align: right;"><%= Number(item.UnitPriceSnapshot).toLocaleString('vi-VN') %> đ</td>
+              <td style="text-align: right; font-weight: 600;"><%= Number(item.LineTotal).toLocaleString('vi-VN') %> đ</td>
+            </tr>
+          <% }); %>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="order-summary-grid">
+    <div>
+      <% if (order.CustomerNote) { %>
+        <div style="background-color: var(--bg-secondary); padding: 14px 18px; border-radius: var(--border-radius-sm); border: 1px dashed var(--border-color);">
+          <strong style="font-size: 0.85rem; color: var(--text-secondary); text-transform: uppercase;">Ghi chú gửi Lab:</strong>
+          <p style="margin-top: 4px; font-size: 0.95rem; color: var(--text-primary);"><%= order.CustomerNote %></p>
+        </div>
+      <% } %>
+    </div>
+
+    <div>
+      <div class="summary-row">
+        <span>Tiền dịch vụ tráng scan:</span>
+        <strong><%= Number(order.Subtotal).toLocaleString('vi-VN') %> đ</strong>
+      </div>
+      <div class="summary-row">
+        <span>Phí vận chuyển:</span>
+        <span><%= Number(order.DeliveryFee).toLocaleString('vi-VN') %> đ</span>
+      </div>
+      <div class="summary-row total">
+        <span>Tổng cộng:</span>
+        <span><%= Number(order.TotalAmount).toLocaleString('vi-VN') %> đ</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Đánh giá và Phản hồi từ Lab (nếu có) -->
+<% if (review) { %>
+  <div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--accent-gold);">
+    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+      <span>Đánh giá của bạn</span>
+      <span style="color: var(--accent-gold); font-size: 1.2rem;">
+        <%= '★'.repeat(review.RatingOverall) %><%= '☆'.repeat(5 - review.RatingOverall) %>
+      </span>
+    </h3>
+    <p style="font-size: 0.95rem; color: var(--text-primary);"><%= review.Comment || '(Không có bình luận)' %></p>
+    <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 6px;">
+      Gửi ngày <%= new Date(review.CreatedAt).toLocaleDateString('vi-VN') %>
+    </div>
+
+    <% if (review.LabReply) { %>
+      <div style="margin-top: 14px; padding: 12px 16px; background-color: var(--bg-secondary); border-radius: var(--border-radius-sm); border: 1px solid var(--border-color);">
+        <strong style="color: var(--accent-cyan); font-size: 0.85rem;">Phản hồi từ Lab:</strong>
+        <p style="margin-top: 4px; font-size: 0.925rem;"><%= review.LabReply %></p>
+      </div>
+    <% } %>
+  </div>
+<% } %>
+
+<!-- Lịch sử Khiếu nại (nếu có) -->
+<% if (complaints && complaints.length > 0) { %>
+  <div class="card" style="margin-bottom: 24px; border-left: 4px solid var(--color-danger);">
+    <h3 style="font-size: 1.1rem; color: var(--text-primary); margin-bottom: 12px;">
+      Khiếu nại về đơn hàng
+    </h3>
+    <% complaints.forEach(function(c) { %>
+      <div style="padding: 12px 0; border-bottom: 1px solid var(--border-color);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+          <strong style="font-size: 0.95rem; color: var(--text-primary);"><%= c.Title %></strong>
+          <span class="status-badge <%= c.Status === 'Resolved' ? 'completed' : 'pending' %>">
+            <%= c.Status %>
+          </span>
+        </div>
+        <p style="font-size: 0.875rem; color: var(--text-secondary);"><%= c.Description %></p>
+        <% if (c.Resolution) { %>
+          <div style="margin-top: 8px; font-size: 0.85rem; color: var(--color-success);">
+            <strong>Giải quyết:</strong> <%= c.Resolution %>
+          </div>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<!-- Thanh hành động cho Khách hàng -->
+<div class="card" style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+  <div>
+    <a href="/orders" class="btn btn-secondary">
+      ← Quay lại danh sách đơn
+    </a>
+  </div>
+
+  <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+
+    <!-- Nút Đánh giá (chỉ khi đơn đã hoàn tất & chưa đánh giá) -->
+    <% if (order.StageId === 12 && !review) { %>
+      <a href="/orders/<%= order.OrderId %>/review" class="btn btn-primary">
+        ⭐ Viết đánh giá phòng Lab
+      </a>
+    <% } %>
+
+    <!-- Nút Khiếu nại (chỉ khi đơn đã nhận phim trở đi) -->
+    <% if (order.StageId >= 4 && order.StageId !== 13) { %>
+      <a href="/orders/<%= order.OrderId %>/complaint" class="btn btn-outline" style="color: var(--color-danger); border-color: rgba(239, 68, 68, 0.4);">
+        ⚠️ Gửi khiếu nại
+      </a>
+    <% } %>
+
+    <!-- Nút Hủy đơn hàng (khi ở các giai đoạn đầu) -->
+    <% if (order.StageId < 5) { %>
+      <button type="button" class="btn btn-danger" onclick="document.getElementById('cancelSection').style.display = 'block'; this.style.display = 'none';">
+        Hủy đơn hàng
+      </button>
+    <% } %>
+  </div>
+</div>
+
+<!-- Form Hủy đơn hàng (Ẩn mặc định, hiển thị khi bấm nút Hủy) -->
+<% if (order.StageId < 5) { %>
+  <div id="cancelSection" class="card" style="display: none; margin-top: 16px; border: 1px solid var(--color-danger); background-color: rgba(239, 68, 68, 0.04);">
+    <h4 style="color: var(--color-danger); margin-bottom: 10px;">Xác nhận hủy đơn hàng</h4>
+    <p style="font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 14px;">
+      Đơn hàng chỉ có thể hủy trước khi Lab tiến hành tráng phim buồng tối. Vui lòng cho biết lý do hủy đơn:
+    </p>
+
+    <form id="cancelOrderForm" action="/orders/<%= order.OrderId %>/cancel" method="POST">
+      <div class="form-group">
+        <input type="text" id="cancelReasonInput" name="reason" class="form-control" placeholder="Ví dụ: Đổi kế hoạch chụp, gửi nhầm lab, thay đổi dịch vụ..." required>
+      </div>
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelSection').style.display = 'none';">
+          Đóng
+        </button>
+        <button type="submit" class="btn btn-danger">
+          Xác nhận hủy đơn ngay
+        </button>
+      </div>
+    </form>
+  </div>
+<% } %>
+
+<%- include('../partials/footer') %>

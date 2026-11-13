@@ -1,0 +1,82 @@
+<%- include('../partials/header', { title: 'Đánh giá dịch vụ phòng Lab' }) %>
+
+<div class="review-form-card card">
+  <div style="border-bottom: 1px solid var(--border-color); padding-bottom: 16px; margin-bottom: 24px;">
+    <h1 style="font-size: 1.5rem; color: var(--text-primary); margin-bottom: 6px;">
+      Đánh giá dịch vụ phòng Lab
+    </h1>
+    <p style="color: var(--text-secondary); font-size: 0.95rem;">
+      Đơn hàng: <strong style="color: var(--accent-gold); font-family: var(--font-mono);"><%= order.OrderCode || ('ORD-' + order.OrderId) %></strong> · 
+      Phòng Lab: <strong style="color: var(--text-primary);"><%= order.LabName %></strong>
+    </p>
+  </div>
+
+  <form action="/orders/<%= order.OrderId %>/review" method="POST">
+    <!-- Đánh giá tổng thể (Bắt buộc) -->
+    <div class="form-group">
+      <label class="form-label" style="font-size: 1rem; color: var(--text-primary);">
+        1. Đánh giá tổng thể <span style="color: var(--color-danger);">*</span>
+      </label>
+      <div class="star-rating-group" data-input-id="ratingOverallInput">
+        <span class="star-btn" data-value="1">★</span>
+        <span class="star-btn" data-value="2">★</span>
+        <span class="star-btn" data-value="3">★</span>
+        <span class="star-btn" data-value="4">★</span>
+        <span class="star-btn" data-value="5">★</span>
+        <span class="star-rating-hint"></span>
+      </div>
+      <input type="hidden" id="ratingOverallInput" name="ratingOverall" value="5" required>
+    </div>
+
+    <!-- Chất lượng Scan (Tùy chọn) -->
+    <div class="form-group" style="margin-top: 24px;">
+      <label class="form-label">
+        2. Chất lượng hình ảnh Scan (Độ nét, chi tiết vùng tối/sáng, tone màu)
+      </label>
+      <div class="star-rating-group" data-input-id="ratingScanInput">
+        <span class="star-btn" data-value="1">★</span>
+        <span class="star-btn" data-value="2">★</span>
+        <span class="star-btn" data-value="3">★</span>
+        <span class="star-btn" data-value="4">★</span>
+        <span class="star-btn" data-value="5">★</span>
+        <span class="star-rating-hint"></span>
+      </div>
+      <input type="hidden" id="ratingScanInput" name="ratingScanQuality" value="5">
+    </div>
+
+    <!-- Tốc độ xử lý (Tùy chọn) -->
+    <div class="form-group" style="margin-top: 24px;">
+      <label class="form-label">
+        3. Tốc độ xử lý & Giao trả phim
+      </label>
+      <div class="star-rating-group" data-input-id="ratingSpeedInput">
+        <span class="star-btn" data-value="1">★</span>
+        <span class="star-btn" data-value="2">★</span>
+        <span class="star-btn" data-value="3">★</span>
+        <span class="star-btn" data-value="4">★</span>
+        <span class="star-btn" data-value="5">★</span>
+        <span class="star-rating-hint"></span>
+      </div>
+      <input type="hidden" id="ratingSpeedInput" name="ratingSpeed" value="5">
+    </div>
+
+    <!-- Bình luận / Nhận xét chi tiết -->
+    <div class="form-group" style="margin-top: 24px;">
+      <label for="reviewComment" class="form-label">
+        Nhận xét chi tiết (Góp ý để Lab nâng cao chất lượng)
+      </label>
+      <textarea id="reviewComment" name="comment" class="form-control" rows="4" placeholder="Chia sẻ cảm nhận của bạn về màu sắc, độ sạch bụi của phim, thái độ phục vụ..."></textarea>
+      <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px; text-align: right;">
+        Tối đa 1000 ký tự
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 32px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+      <a href="/orders/<%= order.OrderId %>" class="btn btn-secondary">Hủy bỏ</a>
+      <button type="submit" class="btn btn-primary">Gửi đánh giá</button>
+    </div>
+  </form>
+</div>
+
+<script src="/js/orders.js"></script>
+<%- include('../partials/footer') %>
