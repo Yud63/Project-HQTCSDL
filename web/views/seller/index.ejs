@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seller - Đăng sản phẩm</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f4f6;
+      margin: 0;
+      padding: 30px 15px;
+    }
+    .container {
+      max-width: 720px;
+      margin: auto;
+      background: white;
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 3px 14px #0001;
+    }
+    h1 { margin-top: 0; }
+    label {
+      display: block;
+      font-weight: bold;
+      margin: 16px 0 6px;
+    }
+    input, select, textarea {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 11px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font: inherit;
+    }
+    textarea { min-height: 100px; }
+    button {
+      margin-top: 22px;
+      padding: 12px 20px;
+      background: #2563eb;
+      color: white;
+      border: 0;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    .success {
+      padding: 12px;
+      background: #dcfce7;
+      margin-bottom: 20px;
+      border-radius: 6px;
+    }
+    .hint { color: #666; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>Đăng sản phẩm mới</h1>
+    <p>Đăng bán, trao đổi hoặc tìm mua thiết bị nhiếp ảnh.</p>
+
+    <% if (typeof csrfToken !== 'undefined') { %>
+      <% if (typeof query !== 'undefined' && query.created) { %>
+        <div class="success">Đã tạo tin đăng thành công!</div>
+      <% } %>
+    <% } %>
+
+    <form action="/seller/create" method="POST">
+      <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+
+      <label for="categoryId">Danh mục</label>
+      <select id="categoryId" name="categoryId" required>
+        <option value="1">Máy ảnh</option>
+        <option value="2">Ống kính</option>
+        <option value="3">Phim</option>
+        <option value="4">Đèn flash</option>
+        <option value="5">Phụ kiện</option>
+        <option value="6">Khác</option>
+      </select>
+
+      <label for="listingType">Loại tin đăng</label>
+      <select id="listingType" name="listingType" required>
+        <option value="Sell">Bán sản phẩm</option>
+        <option value="Exchange">Trao đổi</option>
+        <option value="Wanted">Tìm mua</option>
+      </select>
+
+      <label for="title">Tên sản phẩm</label>
+      <input id="title" name="title" maxlength="200"
+             placeholder="Ví dụ: Canon AE-1" required>
+
+      <label for="description">Mô tả</label>
+      <textarea id="description" name="description"
+                maxlength="2000"
+                placeholder="Thông tin chi tiết sản phẩm"></textarea>
+
+      <label for="condition">Tình trạng</label>
+      <select id="condition" name="condition">
+        <option value="New">Mới</option>
+        <option value="LikeNew">Như mới</option>
+        <option value="Good">Tốt</option>
+        <option value="Fair">Đã qua sử dụng</option>
+        <option value="ForParts">Bán linh kiện</option>
+      </select>
+
+      <label for="price">Giá (VNĐ)</label>
+      <input id="price" name="price" type="number"
+             min="0" step="1" placeholder="Ví dụ: 1500000">
+
+      <label for="exchangeWanted">Muốn trao đổi lấy</label>
+      <input id="exchangeWanted" name="exchangeWanted"
+             maxlength="255"
+             placeholder="Chỉ cần nhập khi chọn Trao đổi">
+
+      <label for="quantity">Số lượng</label>
+      <input id="quantity" name="quantity" type="number"
+             min="1" step="1" value="1" required>
+
+      <label for="city">Thành phố</label>
+      <input id="city" name="city" maxlength="100"
+             placeholder="Ví dụ: Hà Nội" required>
+
+      <button type="submit">Đăng sản phẩm</button>
+    </form>
+
+<hr style="margin: 35px 0; border: 1px solid #eee;">
+
+<h2>Sản phẩm của tôi</h2>
+<p>Danh sách sản phẩm đang bán của bạn.</p>
+
+<div style="overflow-x: auto;">
+  <table style="width: 100%; border-collapse: collapse;">
+    <thead>
+      <tr style="background: #f3f4f6;">
+        <th style="padding: 12px;">Mã SP</th>
+        <th style="padding: 12px;">Tên sản phẩm</th>
+        <th style="padding: 12px;">Giá</th>
+        <th style="padding: 12px;">Số lượng</th>
+      </tr>
+    </thead>
+    <tbody>
+      <% if (products && products.length > 0) { %>
+        <% products.forEach(function(p) { %>
+          <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 12px;">
+              #<%= p.ListingId %>
+            </td>
+            <td style="padding: 12px;">
+              <%= p.Title %>
+            </td>
+            <td style="padding: 12px;">
+              <%= p.Price == null
+                ? 'Thỏa thuận'
+                : Number(p.Price).toLocaleString('vi-VN') + 'đ' %>
+            </td>
+            <td style="padding: 12px;">
+              <%= p.Quantity %>
+            </td>
+          </tr>
+        <% }); %>
+      <% } else { %>
+        <tr>
+          <td colspan="4" style="padding: 20px; text-align: center;">
+            Bạn chưa có sản phẩm đang bán.
+          </td>
+        </tr>
+      <% } %>
+    </tbody>
+  </table>
+</div>
+
+
+    <p class="hint">
+      Tin đăng sẽ được lưu vào FilmLabDB thông qua
+      mkt.sp_CreateListing.
+    </p>
+  </main>
+</body>
+</html>
