@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<a href="/labs">← Tìm lab</a><h1><%= lab.LabName %></h1>
+<p><%= [lab.AddressLine,lab.Ward,lab.District,lab.City].filter(Boolean).join(', ') %></p>
+<p><%= lab.Description %></p><p><%= [lab.Phone,lab.Email].filter(Boolean).join(' · ') %></p>
+<h2>Gói dịch vụ</h2>
+<% if (!services.length) { %><p class="empty">Lab chưa có gói dịch vụ đang bán.</p><% } %>
+<div class="grid"><% for (const s of services) { %><article class="card">
+  <h3><%= s.PackageName %></h3><p><%= [s.ServiceName,s.FormatCode,s.ProcessCode,s.ScanQuality].filter(Boolean).join(' · ') %></p>
+  <p><%= s.Description %></p><strong><%= Number(s.UnitPrice).toLocaleString('vi-VN') %> đ/<%= s.PriceUnit === 'Roll' ? 'cuộn' : s.PriceUnit %></strong> · <%= s.TurnaroundDays %> ngày
+</article><% } %></div>
+<% if (services.length && currentUser.role === 'Customer') { %><p><a class="btn" href="<%= orderUrl %>">Đặt đơn tại lab này</a></p><% } %>
+<h2>Đánh giá của khách</h2>
+<% if (lab.ReviewCount) { %><p><%= lab.AvgRating %>/5 · <%= lab.ReviewCount %> đánh giá</p><% } %>
+<% if (reviews === null) { %><p class="empty">Nội dung nhận xét hiện chưa khả dụng.</p>
+<% } else if (!reviews.length) { %><p class="empty">Chưa có đánh giá hiển thị.</p>
+<% } else { for (const r of reviews) { %><article class="card">
+  <h3><%= r.CustomerName %> · <%= r.RatingOverall %>/5</h3>
+  <p><%= new Date(r.CreatedAt).toLocaleDateString('vi-VN', {timeZone:'Asia/Ho_Chi_Minh'}) %> · Chất lượng scan: <%= r.RatingScanQuality ?? '—' %> · Tốc độ: <%= r.RatingSpeed ?? '—' %></p>
+  <p><%= r.Comment %></p><% if (r.LabReply) { %><p><strong>Lab phản hồi</strong> · <%= r.LabReply %></p><% } %>
+</article><% } } %>
+<%- include('../partials/footer') %>

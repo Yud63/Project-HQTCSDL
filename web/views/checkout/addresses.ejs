@@ -1,0 +1,22 @@
+<%- include('../partials/header') %>
+<% if (orderUrl) { %><a href="<%= orderUrl %>">← Quay lại đặt đơn</a><% } %>
+<h1>Địa chỉ của tôi</h1>
+<% if (!list.length) { %><p class="empty">Bạn chưa có địa chỉ lấy hoặc trả phim.</p><% } %>
+<div class="grid"><% for (const a of list) { %><article class="card">
+<h2><%= a.Label || a.RecipientName %> <%= a.IsDefault ? '· Mặc định' : '' %></h2>
+<p><%= a.RecipientName %> · <%= a.Phone %></p><p><%= [a.Line1,a.Ward,a.District,a.City].join(', ') %></p>
+<a href="<%= addressUrl(a.AddressId) %>#form">Sửa địa chỉ</a>
+<form method="post" action="<%= addressUrl() %>"><input type="hidden" name="addressId" value="<%= a.AddressId %>"><button class="btn btn-outline" name="action" value="delete">Xóa địa chỉ</button></form>
+</article><% } %></div>
+<h2 id="form"><%= edit.AddressId ? 'Sửa địa chỉ' : 'Thêm địa chỉ' %></h2>
+<form class="form card" method="post" action="<%= addressUrl() %>">
+<input type="hidden" name="addressId" value="<%= edit.AddressId || '' %>">
+<% for (const [key,[label,max]] of Object.entries(addressFields)) { %>
+<label><%= label %> <input name="<%= key %>" value="<%= edit[key] || '' %>" maxlength="<%= max %>" <%= key === 'Label' ? '' : 'required' %>></label><% } %>
+<label>Vĩ độ <input name="Latitude" type="number" step="any" min="-90" max="90"></label>
+<label>Kinh độ <input name="Longitude" type="number" step="any" min="-180" max="180"></label>
+<% if (edit.AddressId) { %><label><input type="checkbox" name="clearCoordinates" value="yes"> Lưu không có tọa độ (xóa tọa độ cũ nếu có). Để giữ vị trí, nhập lại cả hai tọa độ.</label><% } %>
+<label><input type="checkbox" name="isDefault" value="yes" <%= edit.IsDefault ? 'checked' : '' %>> Đặt làm địa chỉ mặc định</label>
+<button class="btn" name="action" value="save">Lưu địa chỉ</button><% if (edit.AddressId) { %><a href="<%= addressUrl() %>">Hủy sửa</a><% } %>
+</form>
+<%- include('../partials/footer') %>
