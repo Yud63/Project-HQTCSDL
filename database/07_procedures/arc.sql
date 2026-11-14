@@ -390,3 +390,58 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE arc.sp_GetMyAlbums
+    @UserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+    IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsActive = 1 AND IsDeleted = 0)
+        THROW 50501, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+    SELECT a.AlbumId, a.Title, a.Description, a.IsPublic, a.CoverScanFileId,
+           cv.StorageUrl AS CoverStorageUrl, a.CreatedAt, a.UpdatedAt,
+           (SELECT COUNT(*)
+            FROM arc.AlbumPhotos ap
+            JOIN arc.ScanFiles sf ON sf.ScanFileId = ap.ScanFileId AND sf.IsDeleted = 0
+            WHERE ap.AlbumId = a.AlbumId) AS PhotoCount
+    FROM arc.Albums a
+    LEFT JOIN arc.ScanFiles cv ON cv.ScanFileId = a.CoverScanFileId AND cv.IsDeleted = 0
+    WHERE a.OwnerUserId = @UserId AND a.IsDeleted = 0
+    ORDER BY a.CreatedAt DESC;
+END
+GO
+
+CREATE OR ALTER PROCEDURE arc.sp_GetAlbumPhotos
+    @UserId  INT,
+    @AlbumId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+    IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsActive = 1 AND IsDeleted = 0)
+        THROW 50501, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+    DECLARE @Owner INT;
+    SELECT @Owner = OwnerUserId FROM arc.Albums WHERE AlbumId = @AlbumId AND IsDeleted = 0;
+    IF @Owner IS NULL
+        THROW 50501, N'Album không tồn tại.', 1;
+    IF @Owner <> @UserId
+        THROW 50503, N'Album không thuộc về bạn.', 1;
+
+    -- Result set 1: thông tin album
+    SELECT AlbumId, Title, Description, IsPublic, CoverScanFileId, CreatedAt, UpdatedAt
+    FROM arc.Albums WHERE AlbumId = @AlbumId;
+
+    -- Result set 2: ảnh trong album
+    SELECT sf.ScanFileId, sf.FileName, sf.StorageUrl, sf.ContentType, sf.FrameNumber,
+           sf.WidthPx, sf.HeightPx, sf.QualityStatus, ap.SortOrder, ap.AddedAt
+    FROM arc.AlbumPhotos ap
+    JOIN arc.ScanFiles sf ON sf.ScanFileId = ap.ScanFileId AND sf.IsDeleted = 0
+    WHERE ap.AlbumId = @AlbumId
+    ORDER BY ap.SortOrder, ap.AddedAt;
+END
+GO

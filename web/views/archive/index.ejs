@@ -1,0 +1,28 @@
+<%- include('../partials/header') %>
+<h1>Kho ảnh</h1>
+<p><a class="btn btn-sm" href="/archive">Tất cả ảnh</a> <a class="btn btn-sm btn-outline" href="/archive/albums">Album</a></p>
+<p class="muted">Ảnh scan từ các đơn của bạn, kèm thông tin phim và máy ảnh.</p>
+
+<h2>Ảnh scan <span class="muted">(<%= photos.length %>)</span></h2>
+<% if (!photos.length) { %><div class="card empty">Bạn chưa có ảnh scan nào.</div><% } else { %>
+<div class="grid">
+<% photos.forEach(function(p){ var local = p.StorageUrl && p.StorageUrl.indexOf('/owner/scans/') === 0; %>
+  <div class="card">
+    <% if (local) { %>
+      <img src="<%= p.StorageUrl %>" alt="<%= p.FileName %>" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px">
+    <% } else { %>
+      <div class="muted" style="width:100%;aspect-ratio:3/2;background:#e8e6e0;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.85rem;padding:8px">Chưa có file ảnh<br><%= p.FileName %></div>
+    <% } %>
+    <p style="margin:8px 0 4px"><strong>Khung <%= p.FrameNumber != null ? p.FrameNumber : '—' %></strong>
+      <span class="badge <%= p.QualityStatus === 'Passed' ? 'badge-success' : 'badge-warning' %>"><%= p.QualityStatus %></span></p>
+    <p class="muted" style="margin:0">
+      <a href="/orders/<%= p.OrderId %>"><%= p.OrderCode %></a> · <%= p.LabName %><br>
+      <%= [p.FilmBrand, p.FilmStockName].filter(Boolean).join(' ') || 'Chưa rõ phim' %><br>
+      <%= p.CameraModel || 'Chưa rõ máy ảnh' %><%= p.ExposedIso ? ' · ISO ' + p.ExposedIso : '' %><br>
+      <%= p.WidthPx && p.HeightPx ? p.WidthPx + '×' + p.HeightPx + ' · ' : '' %>Trong <%= p.AlbumCount %> album
+    </p>
+  </div>
+<% }) %>
+</div>
+<% } %>
+<%- include('../partials/footer') %>

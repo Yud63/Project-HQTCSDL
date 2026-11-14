@@ -41,6 +41,8 @@ GRANT EXECUTE ON ai.sp_RecordRecommendationAction TO role_Customer;
 GRANT EXECUTE ON iam.sp_SaveAddress              TO role_Customer;
 GRANT EXECUTE ON arc.sp_SaveAlbum                TO role_Customer;
 GRANT EXECUTE ON arc.sp_SetAlbumPhoto            TO role_Customer;
+GRANT EXECUTE ON arc.sp_GetMyAlbums             TO role_Customer;
+GRANT EXECUTE ON arc.sp_GetAlbumPhotos          TO role_Customer;
 
 -- ===== 2. GRANT EXECUTE: role_LabOwner =====
 GRANT EXECUTE ON lab.sp_SearchLabs               TO role_LabOwner;

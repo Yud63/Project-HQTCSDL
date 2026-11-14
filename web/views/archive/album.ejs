@@ -1,0 +1,23 @@
+<%- include('../partials/header') %>
+<p><a href="/archive/albums">← Tất cả album</a></p>
+<h1><%= album.Title %></h1>
+<p class="muted"><%= album.IsPublic ? 'Công khai' : 'Riêng tư' %><%= album.Description ? ' · ' + album.Description : '' %></p>
+
+<h2>Ảnh trong album <span class="muted">(<%= photos.length %>)</span></h2>
+<% if (!photos.length) { %><div class="card empty">Album chưa có ảnh nào.</div><% } else { %>
+<div class="grid">
+<% photos.forEach(function(p){ var local = p.StorageUrl && p.StorageUrl.indexOf('/owner/scans/') === 0; %>
+  <div class="card">
+    <% if (local) { %>
+      <img src="<%= p.StorageUrl %>" alt="<%= p.FileName %>" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px">
+    <% } else { %>
+      <div class="muted" style="width:100%;aspect-ratio:3/2;background:#e8e6e0;border-radius:4px;display:flex;align-items:center;justify-content:center;text-align:center;font-size:.85rem;padding:8px">Chưa có file ảnh<br><%= p.FileName %></div>
+    <% } %>
+    <p style="margin:8px 0 4px"><strong>Khung <%= p.FrameNumber != null ? p.FrameNumber : '—' %></strong>
+      <% if (String(p.ScanFileId).toLowerCase() === String(album.CoverScanFileId || '').toLowerCase()) { %><span class="badge">Ảnh bìa</span><% } %></p>
+    <p class="muted" style="margin:0"><%= p.WidthPx && p.HeightPx ? p.WidthPx + '×' + p.HeightPx + ' · ' : '' %><%= p.QualityStatus %></p>
+  </div>
+<% }) %>
+</div>
+<% } %>
+<%- include('../partials/footer') %>

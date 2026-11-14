@@ -1,0 +1,21 @@
+<%- include('../partials/header') %>
+<h1>Kho ảnh</h1>
+<p><a class="btn btn-sm btn-outline" href="/archive">Tất cả ảnh</a> <a class="btn btn-sm" href="/archive/albums">Album</a></p>
+
+<h2>Album của tôi <span class="muted">(<%= albums.length %>)</span></h2>
+<% if (!albums.length) { %><div class="card empty">Bạn chưa có album nào.</div><% } else { %>
+<div class="grid">
+<% albums.forEach(function(a){ var local = a.CoverStorageUrl && a.CoverStorageUrl.indexOf('/owner/scans/') === 0; %>
+  <a class="card card-link" href="/archive/albums/<%= a.AlbumId %>">
+    <% if (local) { %>
+      <img src="<%= a.CoverStorageUrl %>" alt="<%= a.Title %>" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px">
+    <% } else { %>
+      <div class="muted" style="width:100%;aspect-ratio:3/2;background:#e8e6e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85rem">Chưa có ảnh bìa</div>
+    <% } %>
+    <p style="margin:8px 0 4px"><%= a.Title %></p>
+    <p class="muted" style="margin:0;font-weight:400"><%= a.PhotoCount %> ảnh · <%= a.IsPublic ? 'Công khai' : 'Riêng tư' %><br><%= a.Description || '' %></p>
+  </a>
+<% }) %>
+</div>
+<% } %>
+<%- include('../partials/footer') %>
