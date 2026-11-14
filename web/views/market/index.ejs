@@ -1,0 +1,49 @@
+<%- include('../partials/header') %>
+<h1>Chợ</h1>
+<p class="muted">Mua bán, trao đổi máy ảnh, ống kính, phim và phụ kiện giữa các thành viên.</p>
+
+<form method="get" action="/market" class="card" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;align-items:end;margin-bottom:16px">
+  <label>Từ khóa <input type="text" name="keyword" value="<%= q.keyword || '' %>" maxlength="200"></label>
+  <label>Danh mục <select name="category"><option value="">Tất cả</option><% categories.forEach(function(c){ %><option value="<%= c.CategoryId %>" <%= q.categoryId === c.CategoryId ? 'selected' : '' %>><%= c.CategoryName %></option><% }) %></select></label>
+  <label>Loại tin <select name="type">
+    <option value="">Tất cả</option>
+    <option value="Sell" <%= q.type === 'Sell' ? 'selected' : '' %>>Bán</option>
+    <option value="Exchange" <%= q.type === 'Exchange' ? 'selected' : '' %>>Trao đổi</option>
+    <option value="Wanted" <%= q.type === 'Wanted' ? 'selected' : '' %>>Cần mua</option>
+  </select></label>
+  <label>Giá từ (đ) <input type="number" name="min" min="0" value="<%= q.min !== null ? q.min : '' %>"></label>
+  <label>Giá đến (đ) <input type="number" name="max" min="0" value="<%= q.max !== null ? q.max : '' %>"></label>
+  <label>Thành phố <input type="text" name="city" value="<%= q.city || '' %>" maxlength="100"></label>
+  <label>Sắp xếp <select name="sort">
+    <option value="Newest" <%= q.sort === 'Newest' ? 'selected' : '' %>>Mới nhất</option>
+    <option value="PriceAsc" <%= q.sort === 'PriceAsc' ? 'selected' : '' %>>Giá tăng dần</option>
+    <option value="PriceDesc" <%= q.sort === 'PriceDesc' ? 'selected' : '' %>>Giá giảm dần</option>
+  </select></label>
+  <div><button class="btn" type="submit">Lọc</button> <a class="btn btn-outline" href="/market">Xóa lọc</a></div>
+</form>
+
+<h2>Tin đăng <span class="muted">(<%= totalRows %> kết quả)</span></h2>
+<% if (!listings.length) { %><div class="card empty">Không có tin phù hợp.</div><% } else { %>
+<div class="grid">
+<% listings.forEach(function(l){
+     var local = l.PrimaryImageUrl && l.PrimaryImageUrl.indexOf('/') === 0;
+     var typeLabel = l.ListingType === 'Sell' ? 'Bán' : (l.ListingType === 'Exchange' ? 'Trao đổi' : 'Cần mua'); %>
+  <a class="card card-link" href="/market/<%= l.ListingId %>">
+    <% if (local) { %>
+      <img src="<%= l.PrimaryImageUrl %>" alt="<%= l.Title %>" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px">
+    <% } else { %>
+      <div class="muted" style="width:100%;aspect-ratio:3/2;background:#e8e6e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:400">Chưa có file ảnh</div>
+    <% } %>
+    <p style="margin:8px 0 4px"><span class="badge"><%= typeLabel %></span> <%= l.Title %></p>
+    <p style="margin:0 0 4px"><strong><%= l.Price != null ? Number(l.Price).toLocaleString('vi-VN') + ' đ' : 'Thỏa thuận' %></strong></p>
+    <p class="muted" style="margin:0;font-weight:400">
+      <%= l.CategoryName %><%= l.Condition ? ' · ' + l.Condition : '' %> · <%= l.City %><br>
+      <%= l.SellerName %> · <%= l.SellerRating != null ? Number(l.SellerRating).toFixed(1) + '/5' : 'Chưa có đánh giá' %>
+    </p>
+  </a>
+<% }) %>
+</div>
+<% } %>
+
+<% if (pageCount > 1) { %><nav class="pagination" aria-label="Phân trang chợ"><% for (var n = Math.max(1, q.page - 2); n <= Math.min(pageCount, q.page + 2); n++) { %><a class="<%= n === q.page ? 'active' : '' %>" href="<%= pageUrl(n) %>"><%= n %></a><% } %></nav><% } %>
+<%- include('../partials/footer') %>

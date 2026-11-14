@@ -25,6 +25,8 @@ GRANT EXECUTE ON arc.sp_MarkNotificationRead     TO role_Customer;
 GRANT EXECUTE ON mkt.sp_CreateListing            TO role_Customer;
 GRANT EXECUTE ON mkt.sp_PlaceMarketOrder         TO role_Customer;
 GRANT EXECUTE ON mkt.sp_SearchListings           TO role_Customer;
+GRANT EXECUTE ON mkt.sp_GetCategories          TO role_Customer;
+GRANT EXECUTE ON mkt.sp_GetListingDetail       TO role_Customer;
 GRANT EXECUTE ON mkt.sp_UpdateMarketTransaction  TO role_Customer;
 GRANT EXECUTE ON mkt.sp_RateSeller               TO role_Customer;
 GRANT EXECUTE ON mkt.sp_SendMessage              TO role_Customer;

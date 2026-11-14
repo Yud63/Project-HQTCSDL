@@ -1,0 +1,36 @@
+<%- include('../partials/header') %>
+<p><a href="/market">← Tất cả tin</a></p>
+<% var typeLabel = listing.ListingType === 'Sell' ? 'Bán' : (listing.ListingType === 'Exchange' ? 'Trao đổi' : 'Cần mua'); %>
+<h1><%= listing.Title %></h1>
+<p><span class="badge"><%= typeLabel %></span> <span class="badge"><%= listing.CategoryName %></span>
+  <% if (listing.Condition) { %><span class="badge"><%= listing.Condition %></span><% } %></p>
+<p style="font-size:1.4rem;margin:8px 0"><strong><%= listing.Price != null ? Number(listing.Price).toLocaleString('vi-VN') + ' đ' : 'Thỏa thuận' %></strong></p>
+
+<div class="grid" style="margin-bottom:16px">
+<% if (!images.length) { %>
+  <div class="card empty">Tin này chưa có ảnh.</div>
+<% } else { images.forEach(function(im){ var local = im.ImageUrl && im.ImageUrl.indexOf('/') === 0; %>
+  <div class="card">
+    <% if (local) { %>
+      <img src="<%= im.ImageUrl %>" alt="<%= listing.Title %>" style="width:100%;aspect-ratio:3/2;object-fit:cover;border-radius:4px">
+    <% } else { %>
+      <div class="muted" style="width:100%;aspect-ratio:3/2;background:#e8e6e0;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:.85rem">Chưa có file ảnh</div>
+    <% } %>
+    <% if (im.IsPrimary) { %><p style="margin:8px 0 0"><span class="badge">Ảnh chính</span></p><% } %>
+  </div>
+<% }) } %>
+</div>
+
+<div class="card">
+  <table class="table"><tbody>
+    <tr><th>Người bán</th><td><%= listing.SellerName %> · <%= listing.SellerRating != null ? Number(listing.SellerRating).toFixed(1) + '/5' : 'Chưa có đánh giá' %></td></tr>
+    <% if (listing.Brand || listing.Model) { %><tr><th>Hãng / Model</th><td><%= [listing.Brand, listing.Model].filter(Boolean).join(' / ') %></td></tr><% } %>
+    <% if (listing.ListingType !== 'Wanted') { %><tr><th>Số lượng</th><td><%= listing.Quantity %></td></tr><% } %>
+    <% if (listing.ExchangeWanted) { %><tr><th>Muốn đổi lấy</th><td><%= listing.ExchangeWanted %></td></tr><% } %>
+    <tr><th>Thành phố</th><td><%= listing.City %></td></tr>
+    <tr><th>Đăng lúc</th><td><%= new Date(listing.CreatedAt).toLocaleDateString('vi-VN') %></td></tr>
+    <tr><th>Hết hạn</th><td><%= new Date(listing.ExpiresAt).toLocaleDateString('vi-VN') %></td></tr>
+  </tbody></table>
+  <% if (listing.Description) { %><h2>Mô tả</h2><p style="white-space:pre-wrap"><%= listing.Description %></p><% } %>
+</div>
+<%- include('../partials/footer') %>

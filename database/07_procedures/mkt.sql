@@ -612,3 +612,46 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE mkt.sp_GetCategories
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT CategoryId, CategoryCode, CategoryName
+    FROM mkt.ListingCategories
+    WHERE IsActive = 1
+    ORDER BY CategoryName;
+END
+GO
+
+-- WITH EXECUTE AS OWNER: người gọi không có SELECT trực tiếp trên mkt.Listings (giống sp_SearchListings)
+CREATE OR ALTER PROCEDURE mkt.sp_GetListingDetail
+    @ListingId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM mkt.Listings
+                   WHERE ListingId = @ListingId AND Status = N'Active'
+                     AND IsDeleted = 0 AND ExpiresAt > SYSUTCDATETIME())
+        THROW 50601, N'Tin không tồn tại hoặc đã đóng.', 1;
+
+    -- Result set 1: tin đăng
+    SELECT l.ListingId, l.SellerId, u.FullName AS SellerName,
+           mkt.fn_SellerRating(l.SellerId) AS SellerRating,
+           l.CategoryId, c.CategoryName, l.ListingType, l.Title, l.Description,
+           l.Brand, l.Model, l.Condition, l.Price, l.ExchangeWanted,
+           l.Quantity, l.City, l.ExpiresAt, l.CreatedAt
+    FROM mkt.Listings l
+    JOIN iam.Users u ON u.UserId = l.SellerId
+    JOIN mkt.ListingCategories c ON c.CategoryId = l.CategoryId
+    WHERE l.ListingId = @ListingId;
+
+    -- Result set 2: ảnh
+    SELECT ImageId, ImageUrl, SortOrder, IsPrimary
+    FROM mkt.ListingImages
+    WHERE ListingId = @ListingId
+    ORDER BY IsPrimary DESC, SortOrder;
+END
+GO
