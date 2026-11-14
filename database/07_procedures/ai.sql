@@ -27,6 +27,7 @@ BEGIN
         DECLARE @Ctx NVARCHAR(MAX);
         DECLARE @Top TABLE (LabId INT, LabName NVARCHAR(150), [Rank] TINYINT,
                             Score DECIMAL(6,4), AvgRating DECIMAL(3,2), DistanceKm DECIMAL(9,2));
+        DECLARE @Logs TABLE (RecLogId BIGINT, ItemId INT);
 
         EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
 
@@ -52,14 +53,16 @@ BEGIN
         ORDER BY s.Score DESC, s.AvgRating DESC, s.LabId;
 
         INSERT INTO ai.RecommendationLogs (UserId, RecommendationType, ItemId, [Rank], Score, ModelVersion, ContextJson)
+        OUTPUT inserted.RecLogId, inserted.ItemId INTO @Logs (RecLogId, ItemId)
         SELECT @UserId, N'Lab', t.LabId, t.[Rank], t.Score, N'tsql-v1', @Ctx
         FROM @Top t;
 
         COMMIT;
 
-        SELECT LabId, LabName, [Rank], Score, AvgRating, DistanceKm
-        FROM @Top
-        ORDER BY [Rank];
+        SELECT t.LabId, t.LabName, t.[Rank], t.Score, t.AvgRating, t.DistanceKm, l.RecLogId
+        FROM @Top t
+        JOIN @Logs l ON l.ItemId = t.LabId
+        ORDER BY t.[Rank];
     END TRY
     BEGIN CATCH
         IF @@TRANCOUNT > 0 ROLLBACK;
