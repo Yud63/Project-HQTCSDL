@@ -188,6 +188,8 @@ GRANT EXECUTE ON iam.sp_GetLoginInfo    TO role_Auth;
 GRANT EXECUTE ON iam.sp_GetMyAddresses  TO role_Customer;
 GRANT EXECUTE ON ord.sp_GetMyOrders     TO role_Customer, role_LabOwner;
 GRANT EXECUTE ON ord.sp_GetOrderDetail  TO role_Customer, role_LabOwner;
+GRANT EXECUTE ON ord.sp_GetMyOrderReview TO role_Customer;
+GRANT EXECUTE ON ord.sp_GetMyComplaints  TO role_Customer;
 GRANT EXECUTE ON lab.sp_GetLabDetail    TO role_Customer, role_LabOwner, role_Expert;
 GRANT EXECUTE ON lab.sp_GetMyLabs       TO role_LabOwner;
 

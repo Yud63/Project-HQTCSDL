@@ -85,8 +85,17 @@ router.get('/orders/:id', async (req, res, next) => {
 
     const items = result.recordsets[1] || [];
     const timeline = result.recordsets[2] || [];
-    const review = null;
-    const complaints = [];
+    const reviewResult = await callProc('Customer', userId, 'ord.sp_GetMyOrderReview', {
+      OrderId: orderId,
+      UserId: userId
+    });
+    const review = (reviewResult.recordset && reviewResult.recordset[0]) || null;
+
+    const complaintResult = await callProc('Customer', userId, 'ord.sp_GetMyComplaints', {
+      OrderId: orderId,
+      UserId: userId
+    });
+    const complaints = complaintResult.recordset || [];
     const scanFiles = [];
 
     res.render('orders/detail', {
@@ -156,7 +165,11 @@ router.get('/orders/:id/review', async (req, res, next) => {
       return res.redirect(`/orders/${orderId}`);
     }
 
-    const hasReview = false;
+    const reviewResult = await callProc('Customer', userId, 'ord.sp_GetMyOrderReview', {
+      OrderId: orderId,
+      UserId: userId
+    });
+    const hasReview = !!(reviewResult.recordset && reviewResult.recordset[0]);
     if (hasReview) {
       req.flash('danger', 'Bạn đã gửi đánh giá cho đơn hàng này rồi.');
       return res.redirect(`/orders/${orderId}`);

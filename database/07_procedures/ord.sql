@@ -504,3 +504,62 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE ord.sp_GetMyOrderReview
+    @OrderId INT,
+    @UserId  INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+        DECLARE @Cust INT;
+        SELECT @Cust = CustomerId FROM ord.Orders WHERE OrderId = @OrderId AND IsDeleted = 0;
+
+        IF @Cust IS NULL
+            THROW 50301, N'Đơn hàng không tồn tại.', 1;
+        IF @Cust <> @UserId
+            THROW 50303, N'Bạn không có quyền xem đánh giá của đơn này.', 1;
+
+        SELECT r.ReviewId, r.OrderId, r.RatingOverall, r.RatingScanQuality, r.RatingSpeed,
+               r.Comment, r.LabReply, r.LabRepliedAt, r.IsVisible, r.CreatedAt
+        FROM ord.Reviews r
+        WHERE r.OrderId = @OrderId AND r.CustomerId = @UserId AND r.IsDeleted = 0;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE ord.sp_GetMyComplaints
+    @OrderId INT,
+    @UserId  INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+        DECLARE @Cust INT;
+        SELECT @Cust = CustomerId FROM ord.Orders WHERE OrderId = @OrderId AND IsDeleted = 0;
+
+        IF @Cust IS NULL
+            THROW 50301, N'Đơn hàng không tồn tại.', 1;
+        IF @Cust <> @UserId
+            THROW 50303, N'Bạn không có quyền xem khiếu nại của đơn này.', 1;
+
+        SELECT c.ComplaintId, c.OrderId, c.Category, c.Title, c.Description, c.Status,
+               c.LabResponse, c.ResolutionType, c.Resolution, c.RefundAmount, c.ResolvedAt, c.CreatedAt
+        FROM ord.Complaints c
+        WHERE c.OrderId = @OrderId AND c.CustomerId = @UserId AND c.IsDeleted = 0
+        ORDER BY c.CreatedAt DESC, c.ComplaintId DESC;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
