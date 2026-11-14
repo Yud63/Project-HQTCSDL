@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<h1>Quản lý người dùng</h1>
+<p class="muted">Tổng số tài khoản: <%= total %></p>
+<form method="get" action="/admin/users" class="card form">
+<label>Từ khóa <input type="text" name="keyword" maxlength="100" placeholder="Tên hoặc email" value="<%= keyword %>"></label>
+<label>Vai trò <select name="role"><option value="">Tất cả vai trò</option><% roles.forEach(function (r) { %><option value="<%= r %>" <%= selectedRole === r ? 'selected' : '' %>><%= r %></option><% }) %></select></label>
+<label>Trạng thái <select name="status">
+<option value="">Tất cả trạng thái</option>
+<option value="1" <%= status === '1' ? 'selected' : '' %>>Hoạt động</option>
+<option value="0" <%= status === '0' ? 'selected' : '' %>>Bị khóa</option>
+</select></label>
+<div><button class="btn" type="submit">Tìm kiếm</button> <a class="btn btn-outline" href="/admin/users">Xóa lọc</a></div>
+</form>
+<% if (!users.length) { %><div class="card empty">Chưa có dữ liệu.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Họ tên</th><th>Email</th><th>Vai trò</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+<% users.forEach(function (u) { %><tr>
+<td><%= u.UserId %></td><td><%= u.FullName %></td><td><%= u.Email %></td><td><%= u.Roles %></td>
+<td><span class="badge <%= u.IsActive ? 'badge-success' : 'badge-warning' %>"><%= u.IsActive ? 'Hoạt động' : 'Đã khóa' %></span></td>
+<td>
+<% if (Number(u.UserId) === Number(selfId)) { %>Tài khoản của bạn<% } else { %>
+<form method="post" action="/admin/users/<%= u.UserId %>/status" style="display:inline">
+<input type="hidden" name="isActive" value="<%= u.IsActive ? '0' : '1' %>">
+<button class="btn btn-sm btn-outline" type="submit" onclick="return confirm('Bạn chắc chắn muốn thay đổi trạng thái tài khoản này?')"><%= u.IsActive ? 'Khóa' : 'Mở khóa' %></button>
+</form>
+<% } %>
+</td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>
