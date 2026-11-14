@@ -1,0 +1,44 @@
+<%- include('../partials/header') %>
+<h1>Sự kiện</h1>
+<p class="muted">Workshop, photowalk và các buổi gặp gỡ sắp diễn ra. Hết chỗ thì bạn vào hàng chờ và được tự động đẩy lên khi có người hủy.</p>
+
+<h2>Sắp diễn ra <span class="muted">(<%= events.length %>)</span></h2>
+<% if (!events.length) { %><div class="card empty">Chưa có sự kiện nào sắp diễn ra.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Sự kiện</th><th>Thời gian</th><th>Địa điểm</th><th class="num">Phí</th><th>Chỗ</th><th>Đăng ký</th></tr></thead><tbody>
+<% events.forEach(function(e){
+     var st = regMap[e.EventId];
+     var active = st === 'Registered' || st === 'Waitlisted' || st === 'Attended';
+     var deadline = e.RegistrationDeadline || e.StartAt;
+     var closed = new Date(deadline) <= now; %>
+<tr>
+<td><strong><%= e.Title %></strong><br><span class="badge"><%= e.EventType %></span> <span class="muted"><%= e.HostLabName || e.OrganizerName %></span></td>
+<td><%= new Date(e.StartAt).toLocaleString('vi-VN') %></td>
+<td><%= e.VenueName %><br><span class="muted"><%= e.City %></span></td>
+<td class="num"><%= Number(e.Fee||0) > 0 ? Number(e.Fee).toLocaleString('vi-VN') + ' đ' : 'Miễn phí' %></td>
+<td><% if (e.SeatsLeft > 0) { %><span class="badge badge-success">Còn <%= e.SeatsLeft %>/<%= e.Capacity %></span><% } else { %><span class="badge badge-warning">Hết chỗ</span><% } %>
+<% if (e.WaitlistCount > 0) { %><br><span class="muted">Hàng chờ: <%= e.WaitlistCount %></span><% } %></td>
+<td>
+<% if (st === 'Registered') { %><span class="badge badge-success">Đã đăng ký</span>
+<% } else if (st === 'Waitlisted') { %><span class="badge badge-warning">Đang chờ</span>
+<% } else if (st === 'Attended') { %><span class="badge badge-success">Đã tham dự</span><% } %>
+<% if (st === 'Registered' || st === 'Waitlisted') { %>
+<form method="post" action="/events/<%= e.EventId %>/cancel" style="display:inline"><button class="btn btn-sm btn-outline" type="submit">Hủy</button></form>
+<% } else if (!active && !closed) { %>
+<form method="post" action="/events/<%= e.EventId %>/register"><button class="btn btn-sm" type="submit"><%= e.SeatsLeft > 0 ? 'Đăng ký' : 'Vào hàng chờ' %></button></form>
+<% } else if (!active && closed) { %><span class="muted">Hết hạn đăng ký</span><% } %>
+</td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+
+<h2>Đăng ký của tôi <span class="muted">(<%= mine.length %>)</span></h2>
+<% if (!mine.length) { %><div class="card empty">Bạn chưa đăng ký sự kiện nào.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Sự kiện</th><th>Thời gian</th><th>Địa điểm</th><th>Trạng thái</th><th>Thanh toán</th></tr></thead><tbody>
+<% mine.forEach(function(r){ %><tr>
+<td><strong><%= r.Title %></strong> <span class="badge"><%= r.EventType %></span></td>
+<td><%= new Date(r.StartAt).toLocaleString('vi-VN') %></td>
+<td><%= r.VenueName %>, <%= r.City %></td>
+<td><span class="badge <%= (r.Status==='Registered'||r.Status==='Attended') ? 'badge-success' : (r.Status==='Waitlisted' ? 'badge-warning' : '') %>"><%= r.Status %></span></td>
+<td><%= r.IsPaid ? 'Đã thanh toán' : 'Chưa thanh toán' %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

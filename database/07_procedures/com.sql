@@ -487,3 +487,21 @@ BEGIN
     END CATCH
 END
 GO
+
+CREATE OR ALTER PROCEDURE com.sp_GetMyEventRegistrations
+    @UserId INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsDeleted = 0 AND IsActive = 1)
+        THROW 50705, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+    SELECT r.EventId, e.Title, e.EventType, e.StartAt, e.VenueName, e.City,
+           r.Status, r.IsPaid, r.CreatedAt
+    FROM com.EventRegistrations r
+    JOIN com.Events e ON e.EventId = r.EventId
+    WHERE r.UserId = @UserId AND e.IsDeleted = 0
+    ORDER BY e.StartAt DESC;
+END
+GO

@@ -33,6 +33,7 @@ GRANT EXECUTE ON com.sp_AddComment               TO role_Customer;
 GRANT EXECUTE ON com.sp_AcceptAnswer             TO role_Customer;
 GRANT EXECUTE ON com.sp_RegisterEvent            TO role_Customer;
 GRANT EXECUTE ON com.sp_CancelEventRegistration  TO role_Customer;
+GRANT EXECUTE ON com.sp_GetMyEventRegistrations   TO role_Customer;
 GRANT EXECUTE ON ai.sp_GetLabRecommendations     TO role_Customer;
 GRANT EXECUTE ON ai.sp_SaveUserPreferences       TO role_Customer;
 GRANT EXECUTE ON ai.sp_LogChatMessage            TO role_Customer;
