@@ -1,0 +1,24 @@
+<%- include('../partials/header') %>
+<h1>Gợi ý phòng Lab bằng AI</h1>
+<p><a class="btn btn-outline" href="/recommend/preferences">Thiết lập sở thích gợi ý Lab</a></p>
+<% if (aiAdvice) { %>
+<section class="card">
+<h2>Tư vấn từ Google Gemini AI</h2>
+<p style="white-space:pre-line"><%= aiAdvice %></p>
+</section>
+<% } %>
+<% if (!labs.length) { %><div class="card empty">Hiện chưa có phòng Lab phù hợp để gợi ý.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Hạng</th><th>Tên phòng Lab</th><th class="num">Điểm gợi ý</th><th class="num">Đánh giá</th><th class="num">Khoảng cách (km)</th><th>Thao tác</th></tr></thead><tbody>
+<% labs.forEach(function (lab) { %><tr>
+<td><%= lab.Rank %></td><td><strong><%= lab.LabName %></strong></td><td class="num"><%= lab.Score %></td><td class="num"><%= lab.AvgRating %></td><td class="num"><%= lab.DistanceKm ?? 'Chưa có' %></td>
+<td>
+<form method="post" action="/recommend/action" style="display:inline">
+<input type="hidden" name="recLogId" value="<%= lab.RecLogId %>">
+<input type="hidden" name="labId" value="<%= lab.LabId %>">
+<button class="btn btn-sm" name="action" value="Clicked">Xem Lab</button>
+<button class="btn btn-sm btn-outline" name="action" value="Dismissed">Bỏ qua</button>
+</form>
+</td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>
