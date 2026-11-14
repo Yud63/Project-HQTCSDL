@@ -323,6 +323,92 @@ router.post('/admin/labs/:id/approve', async (req, res, next) => {
     next(err);
   }
 });
+
+
+// Danh sách khiếu nại đang mở
+router.get('/admin/complaints', async (req, res, next) => {
+  const admin = req.session.user;
+
+  if (!admin) return res.redirect('/login');
+
+  if (admin.role !== 'Admin') {
+    return res.status(403).send('Bạn không có quyền truy cập.');
+  }
+
+  try {
+    const result = await queryAs(
+      'admin',
+      admin.id,
+      `SELECT TOP 200 ComplaintId, OrderCode, CustomerName, LabName, Category, Title,
+              Status, AssignedAdminName, CreatedAt, AgeDays
+       FROM ord.vw_OpenComplaints
+       ORDER BY CreatedAt, ComplaintId`
+    );
+
+    const complaints = result.recordset || [];
+
+    const rows = complaints.map(c => `
+      <tr>
+        <td>${esc(c.ComplaintId)}</td>
+        <td>${esc(c.OrderCode)}</td>
+        <td>${esc(c.CustomerName)}</td>
+        <td>${esc(c.LabName)}</td>
+        <td>${esc(c.Category)}</td>
+        <td>${esc(c.Title)}</td>
+        <td>${esc(c.Status)}</td>
+        <td>${esc(c.AssignedAdminName ?? 'Chưa phân công')}</td>
+        <td>${c.CreatedAt ? esc(new Date(c.CreatedAt).toLocaleString('vi-VN')) : ''}</td>
+        <td>${esc(c.AgeDays ?? 0)}</td>
+      </tr>
+    `).join('');
+
+    res.send(`
+      <!DOCTYPE html>
+      <html lang="vi">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Khiếu nại - FilmLab</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 40px; }
+          table { border-collapse: collapse; width: 100%; }
+          th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+          th { background: #b54f07; color: white; }
+          a { color: #b54f07; }
+        </style>
+      </head>
+      <body>
+        <a href="/admin">← Về tổng quan Admin</a>
+        <h1>Khiếu nại đang mở - FilmLab</h1>
+        <p>Tổng số khiếu nại: ${complaints.length}</p>
+
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Mã đơn</th>
+              <th>Khách hàng</th>
+              <th>Phòng Lab</th>
+              <th>Loại</th>
+              <th>Tiêu đề</th>
+              <th>Trạng thái</th>
+              <th>Admin phụ trách</th>
+              <th>Ngày tạo</th>
+              <th>Số ngày</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows || '<tr><td colspan="10">Chưa có khiếu nại đang mở</td></tr>'}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // Trang tổng quan Admin
 router.get('/admin', async (req, res, next) => {
   const admin = req.session.user;
@@ -531,6 +617,7 @@ const aiMetrics = aiResult.recordset || [];
         <ul>
           <li><a href="/admin/users">Quản lý người dùng</a></li>
           <li><a href="/admin/labs">Quản lý phòng Lab</a></li>
+          <li><a href="/admin/complaints">Khiếu nại đang mở</a></li>
         </ul>
       </body>
       </html>
@@ -540,3 +627,4 @@ const aiMetrics = aiResult.recordset || [];
   }
 });
 module.exports = router;
+
