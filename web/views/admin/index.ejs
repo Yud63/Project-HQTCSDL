@@ -1,0 +1,47 @@
+<%- include('../partials/header') %>
+<h1>Tổng quan Admin</h1>
+<p class="muted">Trang quản trị hệ thống.</p>
+<p>
+  <a class="btn btn-outline" href="/admin/users">Quản lý người dùng</a>
+  <a class="btn btn-outline" href="/admin/labs">Quản lý phòng Lab</a>
+  <a class="btn btn-outline" href="/admin/complaints">Khiếu nại đang mở</a>
+</p>
+
+<h2>Thống kê hệ thống</h2>
+<div class="table-wrap"><table class="table"><thead><tr><th>Chỉ số</th><th class="num">Giá trị</th></tr></thead><tbody>
+<tr><td>Tổng người dùng</td><td class="num"><%= dashboard.TotalUsers ?? 0 %></td></tr>
+<tr><td>Lab đã duyệt</td><td class="num"><%= dashboard.ApprovedLabs ?? 0 %></td></tr>
+<tr><td>Lab chờ duyệt</td><td class="num"><%= dashboard.PendingLabs ?? 0 %></td></tr>
+<tr><td>Đơn hàng đang xử lý</td><td class="num"><%= dashboard.OrdersInProgress ?? 0 %></td></tr>
+<tr><td>Đơn hàng tháng này</td><td class="num"><%= dashboard.OrdersThisMonth ?? 0 %></td></tr>
+<tr><td>Doanh thu tháng này</td><td class="num"><%= Number(dashboard.RevenueThisMonth || 0).toLocaleString('vi-VN') %> đ</td></tr>
+<tr><td>Khiếu nại đang mở</td><td class="num"><%= dashboard.OpenComplaints ?? 0 %></td></tr>
+</tbody></table></div>
+
+<h2>Khiếu nại đang xử lý <span class="muted">(<%= complaints.length %>)</span></h2>
+<% if (!complaints.length) { %><div class="card empty">Không có khiếu nại đang mở.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>STT</th><th>Khách hàng</th><th>Phòng Lab</th><th>Tiêu đề</th><th>Trạng thái</th></tr></thead><tbody>
+<% complaints.forEach(function (c, i) { %><tr>
+<td><%= i + 1 %></td><td><%= c.CustomerName || '' %></td><td><%= c.LabName || '' %></td><td><%= c.Title || '' %></td><td><span class="badge"><%= c.Status || '' %></span></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+
+<h2>Thống kê AI Recommendation</h2>
+<% if (!aiMetrics.length) { %><div class="card empty">Chưa có dữ liệu.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Phiên bản AI</th><th>Loại đề xuất</th><th class="num">Hiển thị</th><th class="num">Nhấp</th><th class="num">Đặt hàng</th><th class="num">Bỏ qua</th><th class="num">CTR</th><th class="num">Tỷ lệ đặt</th><th class="num">Điểm TB</th></tr></thead><tbody>
+<% aiMetrics.forEach(function (a) { %><tr>
+<td><%= a.ModelVersion || '' %></td><td><%= a.RecommendationType || '' %></td>
+<td class="num"><%= a.Impressions ?? 0 %></td><td class="num"><%= a.Clicked ?? 0 %></td><td class="num"><%= a.Ordered ?? 0 %></td><td class="num"><%= a.Dismissed ?? 0 %></td>
+<td class="num"><%= a.CtrRate ?? 0 %></td><td class="num"><%= a.OrderRate ?? 0 %></td><td class="num"><%= a.AvgScore ?? 0 %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+
+<h2>Nhật ký hoạt động hệ thống <span class="muted">(20 gần nhất)</span></h2>
+<% if (!auditLogs.length) { %><div class="card empty">Chưa có nhật ký.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Mã</th><th>Bảng dữ liệu</th><th>Hành động</th><th>Người thực hiện</th><th>Thời gian</th></tr></thead><tbody>
+<% auditLogs.forEach(function (l) { %><tr>
+<td><%= l.AuditLogId ?? '' %></td><td><%= (l.TableSchema || '') + '.' + (l.TableName || '') %></td><td><%= l.Action || '' %></td><td><%= l.ChangedByName || 'Hệ thống' %></td>
+<td><%= l.ChangedAt ? new Date(l.ChangedAt).toLocaleString('vi-VN') : '' %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

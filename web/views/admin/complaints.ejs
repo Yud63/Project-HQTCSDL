@@ -1,0 +1,13 @@
+<%- include('../partials/header') %>
+<h1>Khiếu nại đang mở</h1>
+<p><a class="btn btn-outline" href="/admin">← Về tổng quan Admin</a></p>
+<p class="muted">Tổng số khiếu nại: <%= complaints.length %></p>
+<% if (!complaints.length) { %><div class="card empty">Chưa có khiếu nại đang mở.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>ID</th><th>Mã đơn</th><th>Khách hàng</th><th>Phòng Lab</th><th>Loại</th><th>Tiêu đề</th><th>Trạng thái</th><th>Admin phụ trách</th><th>Ngày tạo</th><th class="num">Số ngày</th></tr></thead><tbody>
+<% complaints.forEach(function (c) { %><tr>
+<td><%= c.ComplaintId %></td><td><%= c.OrderCode %></td><td><%= c.CustomerName %></td><td><%= c.LabName %></td><td><%= c.Category %></td><td><%= c.Title %></td>
+<td><span class="badge"><%= c.Status %></span></td><td><%= c.AssignedAdminName || 'Chưa phân công' %></td>
+<td><%= c.CreatedAt ? new Date(c.CreatedAt).toLocaleString('vi-VN') : '' %></td><td class="num"><%= c.AgeDays ?? 0 %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

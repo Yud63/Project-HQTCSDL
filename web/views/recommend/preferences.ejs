@@ -1,0 +1,16 @@
+<%- include('../partials/header') %>
+<h1>Thiết lập sở thích gợi ý Lab</h1>
+<form method="post" action="/recommend/preferences" class="card form">
+<label>Loại phim yêu thích
+<select name="filmType">
+<option value="">Không chọn</option>
+<% filmTypes.forEach(function (t) { %><option value="<%= t[0] %>" <%= p.PreferredFilmType === t[0] ? 'selected' : '' %>><%= t[1] %></option><% }) %>
+</select></label>
+<label>Thành phố ưu tiên <input name="city" maxlength="100" value="<%= p.PreferredCity || '' %>"></label>
+<label>Khoảng cách tối đa (km) <input type="number" name="distance" min="0.01" max="9999.99" step="0.01" value="<%= p.MaxDistanceKm ?? '' %>"></label>
+<label>Ngân sách tối đa mỗi cuộn (VNĐ) <input type="number" name="budget" min="0" step="1" value="<%= p.MaxBudgetPerRoll ?? '' %>"></label>
+<label><input type="checkbox" name="quality" <%= p.PrioritizeQuality ? 'checked' : '' %>> Ưu tiên chất lượng</label>
+<label><input type="checkbox" name="speed" <%= p.PrioritizeSpeed ? 'checked' : '' %>> Ưu tiên tốc độ</label>
+<div><button class="btn" type="submit">Lưu sở thích</button> <a class="btn btn-outline" href="/recommend">Quay lại gợi ý Lab</a></div>
+</form>
+<%- include('../partials/footer') %>

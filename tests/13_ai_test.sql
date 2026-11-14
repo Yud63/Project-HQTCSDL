@@ -5,7 +5,7 @@ SET ANSI_NULLS ON;
 GO
 SET NOCOUNT ON;
 DROP TABLE IF EXISTS #r;
-CREATE TABLE #r (LabId INT, LabName NVARCHAR(150), [Rank] TINYINT, Score DECIMAL(6,4), AvgRating DECIMAL(3,2), DistanceKm DECIMAL(9,2));
+CREATE TABLE #r (LabId INT, LabName NVARCHAR(150), [Rank] TINYINT, Score DECIMAL(6,4), AvgRating DECIMAL(3,2), DistanceKm DECIMAL(9,2), RecLogId BIGINT);
 
 DECLARE @u1 INT, @u2 INT, @exp INT, @adm INT, @nu INT, @oc INT, @ol INT, @kd INT, @fmt INT;
 DECLARE @e INT, @msg NVARCHAR(400), @n0 INT, @cnt INT, @deleted INT;
