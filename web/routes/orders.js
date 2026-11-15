@@ -17,6 +17,36 @@
 const express = require('express');
 const router = express.Router();
 const { sql, callProc, queryAs } = require('../lib/db');
+
+
+// 12 giai đoạn chuẩn (13 = Cancelled xử lý riêng). Tên lấy từ log nếu có, không thì dùng tên này.
+const STAGES = [
+  [1, 'Chờ lab xác nhận'], [2, 'Lab đã xác nhận'], [3, 'Chờ nhận phim'], [4, 'Đã nhận phim tại lab'],
+  [5, 'Tráng hóa chất'], [6, 'Rửa'], [7, 'Sấy'], [8, 'Scan'], [9, 'Chuẩn bị ảnh'],
+  [10, 'Kiểm tra chất lượng'], [11, 'Sẵn sàng trả phim/ảnh'], [12, 'Hoàn tất'],
+];
+
+// Dựng timeline cho view từ log chuyển stage: mỗi bước có StageId, StageName, StepStatus, ChangedAt.
+function buildTimeline(order, log) {
+  const cur = order.StageId;
+  const reached = new Map();
+  log.forEach((g) => reached.set(g.ToStageId, g));
+  const steps = [];
+  STAGES.forEach(([id, name]) => {
+    if (cur === 13 && !reached.has(id)) return; // đơn hủy: chỉ hiện các bước đã qua
+    const g = reached.get(id);
+    let status = '';
+    if (cur !== 13) status = id < cur || (id === 12 && cur === 12) ? 'completed' : (id === cur ? 'active' : '');
+    else status = 'completed';
+    steps.push({ StageId: id, StageName: (g && g.ToStageName) || name, StepStatus: status, ChangedAt: g ? g.ChangedAt : null });
+  });
+  if (cur === 13) {
+    const g = reached.get(13);
+    steps.push({ StageId: 13, StageName: (g && g.ToStageName) || 'Đã hủy', StepStatus: 'active', ChangedAt: g ? g.ChangedAt : null });
+  }
+  return steps;
+}
+
 const directQuery = async (...args) => (await queryAs(...args)).recordset;
 const { requireLogin, requireRole } = require('../lib/auth');
 
@@ -84,7 +114,7 @@ router.get('/orders/:id', async (req, res, next) => {
     }
 
     const items = result.recordsets[1] || [];
-    const timeline = result.recordsets[2] || [];
+    const timeline = buildTimeline(order, result.recordsets[2] || []);
     const reviewResult = await callProc('Customer', userId, 'ord.sp_GetMyOrderReview', {
       OrderId: orderId,
       UserId: userId

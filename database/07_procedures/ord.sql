@@ -466,11 +466,13 @@ BEGIN
         WHERE o.OrderId = @OrderId;
 
         -- Result set 2: các dòng dịch vụ
-        SELECT oi.OrderItemId, oi.LabServiceId, ls.PackageName, oi.FilmStockId,
+        SELECT oi.OrderItemId, oi.LabServiceId, ls.PackageName, ls.ProcessCode, ls.ScanQuality,
+               ff.FormatName, oi.FilmStockId,
                CONCAT(fs.Brand, N' ', fs.StockName) AS FilmStock,
                oi.Quantity, oi.UnitPriceSnapshot, oi.LineTotal, oi.ProcessingNote
         FROM ord.OrderItems oi
         JOIN lab.LabServices ls ON ls.LabServiceId = oi.LabServiceId
+        LEFT JOIN lab.FilmFormats ff ON ff.FormatId = ls.FormatId
         LEFT JOIN lab.FilmStocks fs ON fs.StockId = oi.FilmStockId
         WHERE oi.OrderId = @OrderId
         ORDER BY oi.OrderItemId;
