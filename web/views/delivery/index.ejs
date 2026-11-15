@@ -1,0 +1,29 @@
+<%- include('../partials/header') %>
+<h1>Giao nhận</h1>
+<% if (!rows.length) { %><div class="card empty">Hiện không có chuyến nào đang chờ xử lý.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Đơn</th><th>Hướng</th><th>Lab</th><th>Người nhận</th><th>Địa chỉ</th><th class="num">Phí</th><th>Hẹn giờ</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+<% rows.forEach(function(d){
+     var dirLabel = d.Direction === 'Pickup' ? 'Lấy phim' : 'Trả phim';
+     var stLabel = { Requested: 'Chờ phân công', Assigned: 'Đã phân công', PickedUp: 'Đã lấy hàng' }[d.Status] || d.Status; %>
+<tr>
+<td><%= d.OrderCode %></td>
+<td><span class="badge"><%= dirLabel %></span></td>
+<td><%= d.LabName %><br><span class="muted"><%= d.LabAddress %></span></td>
+<td><%= d.RecipientName %><br><span class="muted"><%= d.RecipientPhone %></span></td>
+<td><%= [d.Line1, d.Ward, d.District, d.City].filter(Boolean).join(', ') %></td>
+<td class="num"><%= Number(d.Fee || 0).toLocaleString('vi-VN') %> đ</td>
+<td><%= d.ScheduledAt ? new Date(d.ScheduledAt).toLocaleString('vi-VN') : '—' %></td>
+<td><span class="badge <%= d.Status === 'PickedUp' ? 'badge-warning' : (d.Status === 'Assigned' ? 'badge-success' : '') %>"><%= stLabel %></span></td>
+<td>
+<% if (d.Status === 'Assigned' || d.Status === 'PickedUp') { %>
+<form method="post" action="/delivery/<%= d.DeliveryRequestId %>/status" style="display:flex;gap:6px;flex-wrap:wrap">
+  <input type="text" name="reason" maxlength="255" placeholder="Lý do (nếu thất bại)">
+  <% if (d.Status === 'Assigned') { %><button class="btn btn-sm" name="status" value="PickedUp">Đã lấy hàng</button><% } %>
+  <% if (d.Status === 'PickedUp') { %><button class="btn btn-sm" name="status" value="Delivered">Đã giao</button><% } %>
+  <button class="btn btn-sm btn-danger" name="status" value="Failed">Thất bại</button>
+</form>
+<% } else { %><span class="muted">Chờ phân công</span><% } %>
+</td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

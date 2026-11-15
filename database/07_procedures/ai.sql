@@ -384,3 +384,42 @@ BEGIN
     END CATCH
 END
 GO
+
+GO
+CREATE OR ALTER PROCEDURE ai.sp_RecordOrderedLab
+    @RecLogId BIGINT,
+    @UserId   INT,
+    @LabId    INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+        BEGIN TRAN;
+
+        DECLARE @Owner INT, @Type NVARCHAR(18), @Item INT;
+        SELECT @Owner = UserId, @Type = RecommendationType, @Item = ItemId
+        FROM ai.RecommendationLogs WITH (UPDLOCK)
+        WHERE RecLogId = @RecLogId;
+
+        IF @Owner IS NULL
+            THROW 50801, N'Bản ghi gợi ý không tồn tại.', 1;
+        IF @Owner <> @UserId
+            THROW 50803, N'Bản ghi gợi ý không thuộc về người dùng này.', 1;
+        IF @Type <> N'Lab' OR @Item <> @LabId
+            THROW 50805, N'Bản ghi gợi ý không khớp lab đã đặt.', 1;
+
+        UPDATE ai.RecommendationLogs
+        SET [Action] = N'Ordered', ActedAt = SYSUTCDATETIME()
+        WHERE RecLogId = @RecLogId;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO

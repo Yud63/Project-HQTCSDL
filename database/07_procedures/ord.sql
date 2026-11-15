@@ -563,3 +563,24 @@ BEGIN
     END CATCH
 END
 GO
+
+GO
+CREATE OR ALTER PROCEDURE ord.sp_GetPublicLabReviews
+    @LabId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT TOP (50)
+           CASE WHEN u.FullName IS NULL THEN N'Ẩn danh'
+                ELSE LEFT(u.FullName, 1) + N'. '
+                     + LTRIM(RIGHT(u.FullName, CHARINDEX(N' ', REVERSE(u.FullName) + N' ') - 1))
+           END AS CustomerName,
+           r.RatingOverall, r.RatingScanQuality, r.RatingSpeed,
+           r.Comment, r.LabReply, r.CreatedAt
+    FROM ord.Reviews r
+    LEFT JOIN iam.Users u ON u.UserId = r.CustomerId
+    WHERE r.LabId = @LabId AND r.IsVisible = 1 AND r.IsDeleted = 0
+    ORDER BY r.CreatedAt DESC, r.ReviewId DESC;
+END
+GO
