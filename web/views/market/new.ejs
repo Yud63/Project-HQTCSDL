@@ -1,0 +1,39 @@
+<%- include('../partials/header') %>
+<p><a href="/market">← Chợ</a></p>
+<h1>Đăng tin</h1>
+<% if (error) { %><div class="alert alert-danger"><%= error %></div><% } %>
+<form method="post" action="/market/new" class="card form" style="display:grid;gap:12px;max-width:640px">
+  <label>Loại tin
+    <select name="type">
+      <option value="Sell" <%= (form.type || 'Sell') === 'Sell' ? 'selected' : '' %>>Bán</option>
+      <option value="Exchange" <%= form.type === 'Exchange' ? 'selected' : '' %>>Trao đổi</option>
+      <option value="Wanted" <%= form.type === 'Wanted' ? 'selected' : '' %>>Cần mua</option>
+    </select>
+  </label>
+  <label>Danh mục
+    <select name="category" required>
+      <option value="">-- Chọn --</option>
+      <% categories.forEach(function(c){ %><option value="<%= c.CategoryId %>" <%= String(form.category) === String(c.CategoryId) ? 'selected' : '' %>><%= c.CategoryName %></option><% }) %>
+    </select>
+  </label>
+  <label>Tiêu đề <input type="text" name="title" maxlength="200" required value="<%= form.title || '' %>"></label>
+  <label>Mô tả <textarea name="description" rows="4" maxlength="2000"><%= form.description || '' %></textarea></label>
+  <label>Hãng <input type="text" name="brand" maxlength="50" value="<%= form.brand || '' %>"></label>
+  <label>Model <input type="text" name="model" maxlength="100" value="<%= form.model || '' %>"></label>
+  <label>Tình trạng
+    <select name="condition">
+      <option value="">-- Không chọn (chỉ tin Cần mua) --</option>
+      <% [['New','Mới'],['LikeNew','Như mới'],['Good','Tốt'],['Fair','Khá'],['ForParts','Để lấy linh kiện']].forEach(function(o){ %><option value="<%= o[0] %>" <%= form.condition === o[0] ? 'selected' : '' %>><%= o[1] %></option><% }) %>
+    </select>
+  </label>
+  <label>Giá (đ) <input type="number" name="price" min="0" max="1000000000000" value="<%= form.price || '' %>"></label>
+  <label>Muốn đổi lấy (tin Trao đổi) <input type="text" name="exchangeWanted" maxlength="255" value="<%= form.exchangeWanted || '' %>"></label>
+  <label>Số lượng <input type="number" name="quantity" min="1" value="<%= form.quantity || 1 %>"></label>
+  <label>Thành phố <input type="text" name="city" maxlength="100" required value="<%= form.city || '' %>"></label>
+  <label>URL ảnh (mỗi dòng một URL, tối đa 8, dòng đầu là ảnh chính)
+    <textarea name="images" rows="3" placeholder="https://..."><%= form.images || '' %></textarea>
+  </label>
+  <p class="muted">Tin Bán cần giá và tình trạng; tin Trao đổi cần món muốn đổi và tình trạng. Trang chỉ hiển thị ảnh có đường dẫn bắt đầu bằng /, URL ngoài hiện ô giữ chỗ.</p>
+  <div><button class="btn" type="submit">Đăng tin</button> <a class="btn btn-outline" href="/market">Hủy</a></div>
+</form>
+<%- include('../partials/footer') %>

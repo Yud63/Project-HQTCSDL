@@ -655,3 +655,71 @@ BEGIN
     ORDER BY IsPrimary DESC, SortOrder;
 END
 GO
+
+-- ============================================================
+-- Chợ lượt 2: SP đọc "của tôi". WITH EXECUTE AS OWNER vì Customer
+-- không có SELECT trực tiếp trên mkt.Listings; lọc theo @UserId trong SP.
+-- ============================================================
+CREATE OR ALTER PROCEDURE mkt.sp_GetMyTransactions
+    @UserId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+    SELECT t.TransactionId, t.TransactionCode, t.ListingId, l.Title AS ListingTitle,
+           CASE WHEN t.BuyerId = @UserId THEN N'Buyer' ELSE N'Seller' END AS MyRole,
+           CASE WHEN t.BuyerId = @UserId THEN t.SellerId ELSE t.BuyerId END AS PartnerId,
+           CASE WHEN t.BuyerId = @UserId THEN us.FullName ELSE ub.FullName END AS PartnerName,
+           t.Quantity, t.UnitPrice, t.TotalAmount, t.PlatformFee, t.Status, t.Note,
+           t.CancelReason, t.DisputeReason, t.DisputeResolution,
+           t.BuyerRating, t.BuyerComment,
+           t.CreatedAt, t.ConfirmedAt, t.ShippedAt, t.CompletedAt
+    FROM mkt.MarketTransactions t
+    JOIN mkt.Listings l ON l.ListingId = t.ListingId
+    JOIN iam.Users us ON us.UserId = t.SellerId
+    JOIN iam.Users ub ON ub.UserId = t.BuyerId
+    WHERE t.BuyerId = @UserId OR t.SellerId = @UserId
+    ORDER BY t.CreatedAt DESC, t.TransactionId DESC;
+END
+GO
+
+CREATE OR ALTER PROCEDURE mkt.sp_GetMyListings
+    @UserId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT l.ListingId, l.ListingType, l.Title, l.Status, l.Price, l.Quantity, l.City,
+           l.ExpiresAt, l.CreatedAt, c.CategoryName
+    FROM mkt.Listings l
+    JOIN mkt.ListingCategories c ON c.CategoryId = l.CategoryId
+    WHERE l.SellerId = @UserId AND l.IsDeleted = 0
+    ORDER BY l.CreatedAt DESC, l.ListingId DESC;
+END
+GO
+
+CREATE OR ALTER PROCEDURE mkt.sp_GetMyMessages
+    @UserId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+    SELECT m.MessageId, m.ListingId, l.Title AS ListingTitle, l.SellerId,
+           m.SenderId, m.ReceiverId,
+           CASE WHEN m.SenderId = @UserId THEN m.ReceiverId ELSE m.SenderId END AS PartnerId,
+           CASE WHEN m.SenderId = @UserId THEN ur.FullName ELSE us.FullName END AS PartnerName,
+           CASE WHEN m.SenderId = @UserId THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS IsMine,
+           m.Body, m.SentAt, m.ReadAt
+    FROM mkt.Messages m
+    JOIN mkt.Listings l ON l.ListingId = m.ListingId
+    JOIN iam.Users us ON us.UserId = m.SenderId
+    JOIN iam.Users ur ON ur.UserId = m.ReceiverId
+    WHERE m.SenderId = @UserId OR m.ReceiverId = @UserId
+    ORDER BY m.ListingId, PartnerId, m.SentAt, m.MessageId;
+END
+GO

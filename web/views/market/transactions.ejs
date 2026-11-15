@@ -1,0 +1,46 @@
+<%- include('../partials/header') %>
+<h1>Giao dịch</h1>
+<%- include('_nav') %>
+<% var L = { Pending: 'Chờ xác nhận', Confirmed: 'Đã xác nhận', Shipped: 'Đang giao', Completed: 'Hoàn tất', Cancelled: 'Đã hủy', Disputed: 'Khiếu nại' };
+   var C = { Pending: 'badge-warning', Confirmed: 'badge-warning', Shipped: 'badge-warning', Completed: 'badge-success', Cancelled: 'badge-danger', Disputed: 'badge-danger' }; %>
+<% if (!rows.length) { %><div class="card empty">Bạn chưa có giao dịch nào.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Mã</th><th>Tin</th><th>Vai trò</th><th>Đối tác</th><th class="num">Tổng</th><th>Trạng thái</th><th>Thao tác</th></tr></thead><tbody>
+<% rows.forEach(function(t){ var seller = t.MyRole === 'Seller', buyer = !seller, s = t.Status; %>
+<tr>
+<td><%= t.TransactionCode %><br><span class="muted"><%= new Date(t.CreatedAt).toLocaleDateString('vi-VN') %></span></td>
+<td><%= t.ListingTitle %></td>
+<td><%= seller ? 'Bán' : 'Mua' %></td>
+<td><%= t.PartnerName %></td>
+<td class="num"><%= t.Quantity %> × <%= Number(t.UnitPrice).toLocaleString('vi-VN') %><br><strong><%= Number(t.TotalAmount).toLocaleString('vi-VN') %> đ</strong><% if (seller) { %><br><span class="muted">Phí sàn: <%= Number(t.PlatformFee).toLocaleString('vi-VN') %> đ</span><% } %></td>
+<td><span class="badge <%= C[s] || '' %>"><%= L[s] || s %></span>
+<% if (t.Note) { %><br><span class="muted">Ghi chú: <%= t.Note %></span><% } %>
+<% if (t.CancelReason) { %><br><span class="muted">Lý do hủy: <%= t.CancelReason %></span><% } %>
+<% if (t.DisputeReason) { %><br><span class="muted">Khiếu nại: <%= t.DisputeReason %></span><% } %>
+<% if (t.DisputeResolution) { %><br><span class="muted">Kết quả xử lý: <%= t.DisputeResolution %></span><% } %>
+<% if (t.BuyerRating != null) { %><br><span class="muted">Đánh giá: <%= t.BuyerRating %>/5<%= t.BuyerComment ? ' · ' + t.BuyerComment : '' %></span><% } %>
+</td>
+<td>
+<% if (seller && s === 'Pending') { %>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Confirmed"><button class="btn btn-sm" type="submit">Xác nhận</button></form>
+<% } %>
+<% if (seller && s === 'Confirmed') { %>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Shipped"><button class="btn btn-sm" type="submit">Đã giao hàng</button></form>
+<% } %>
+<% if (buyer && s === 'Shipped') { %>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Completed"><button class="btn btn-sm" type="submit">Đã nhận hàng</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Disputed"><input type="text" name="reason" placeholder="Lý do khiếu nại" maxlength="500" required> <button class="btn btn-sm btn-danger" type="submit">Khiếu nại</button></form>
+<% } %>
+<% if (s === 'Pending' || s === 'Confirmed') { %>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Cancelled"><input type="text" name="reason" placeholder="Lý do hủy" maxlength="255" required> <button class="btn btn-sm btn-danger" type="submit">Hủy</button></form>
+<% } %>
+<% if (buyer && s === 'Completed' && t.BuyerRating == null) { %>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/rate" style="margin:0">
+  <select name="rating"><% [5,4,3,2,1].forEach(function(n){ %><option value="<%= n %>"><%= n %> sao</option><% }) %></select>
+  <input type="text" name="comment" placeholder="Nhận xét" maxlength="500">
+  <button class="btn btn-sm" type="submit">Đánh giá</button>
+</form>
+<% } %>
+</td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

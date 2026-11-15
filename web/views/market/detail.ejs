@@ -33,4 +33,25 @@
   </tbody></table>
   <% if (listing.Description) { %><h2>Mô tả</h2><p style="white-space:pre-wrap"><%= listing.Description %></p><% } %>
 </div>
+<% if (isOwner) { %>
+<div class="card"><p style="margin:0">Đây là tin của bạn. <a href="/market/mine">Tin của tôi</a> · <a href="/market/messages">Tin nhắn</a> · <a href="/market/transactions">Giao dịch</a></p></div>
+<% } else { %>
+  <% if (listing.ListingType === 'Sell') { %>
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0">Đặt mua</h2>
+    <form method="post" action="/market/<%= listing.ListingId %>/order" class="form">
+      <label>Số lượng <input type="number" name="quantity" min="1" max="<%= listing.Quantity %>" value="1" required></label>
+      <label>Ghi chú cho người bán <textarea name="note" rows="2" maxlength="500"></textarea></label>
+      <button class="btn" type="submit">Đặt mua</button>
+    </form>
+  </div>
+  <% } %>
+  <div class="card" style="margin-top:16px">
+    <h2 style="margin-top:0"><%= listing.ListingType === 'Wanted' ? 'Liên hệ người đăng' : 'Nhắn tin cho người bán' %></h2>
+    <form method="post" action="/market/<%= listing.ListingId %>/message" class="form">
+      <label>Nội dung <textarea name="body" rows="3" maxlength="1000" required></textarea></label>
+      <button class="btn" type="submit">Gửi</button>
+    </form>
+  </div>
+<% } %>
 <%- include('../partials/footer') %>

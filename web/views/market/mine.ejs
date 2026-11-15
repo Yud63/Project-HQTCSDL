@@ -1,0 +1,18 @@
+<%- include('../partials/header') %>
+<h1>Tin của tôi</h1>
+<%- include('_nav') %>
+<% if (!listings.length) { %><div class="card empty">Bạn chưa đăng tin nào.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Loại</th><th>Tiêu đề</th><th>Danh mục</th><th class="num">Giá</th><th class="num">SL</th><th>Trạng thái</th><th>Hết hạn</th></tr></thead><tbody>
+<% listings.forEach(function(l){
+     var typeLabel = l.ListingType === 'Sell' ? 'Bán' : (l.ListingType === 'Exchange' ? 'Trao đổi' : 'Cần mua'); %>
+<tr>
+<td><span class="badge"><%= typeLabel %></span></td>
+<td><% if (l.Status === 'Active') { %><a href="/market/<%= l.ListingId %>"><%= l.Title %></a><% } else { %><%= l.Title %><% } %></td>
+<td><%= l.CategoryName %></td>
+<td class="num"><%= l.Price != null ? Number(l.Price).toLocaleString('vi-VN') + ' đ' : 'Thỏa thuận' %></td>
+<td class="num"><%= l.Quantity %></td>
+<td><span class="badge <%= l.Status === 'Active' ? 'badge-success' : '' %>"><%= l.Status %></span></td>
+<td><%= new Date(l.ExpiresAt).toLocaleDateString('vi-VN') %></td>
+</tr><% }) %></tbody></table></div>
+<% } %>
+<%- include('../partials/footer') %>

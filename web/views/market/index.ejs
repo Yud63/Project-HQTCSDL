@@ -1,6 +1,7 @@
 <%- include('../partials/header') %>
 <h1>Chợ</h1>
 <p class="muted">Mua bán, trao đổi máy ảnh, ống kính, phim và phụ kiện giữa các thành viên.</p>
+<%- include('_nav') %>
 
 <form method="get" action="/market" class="card" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;align-items:end;margin-bottom:16px">
   <label>Từ khóa <input type="text" name="keyword" value="<%= q.keyword || '' %>" maxlength="200"></label>
