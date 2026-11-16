@@ -229,3 +229,8 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); o
 .order-detail-header { margin-top: 16px; }
 .orders-header > div:last-child { margin-top: 1.2rem; }
 main.container { padding-bottom: 32px; }
+
+
+/* Checkbox trong form: nằm cùng hàng với chữ */
+.form label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
+.form label.check input { width: auto; margin: 0; }

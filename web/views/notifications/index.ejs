@@ -63,7 +63,7 @@
         <div style="display: flex; flex-direction: column; gap: 8px; align-items: flex-end;">
           <% if (n.OrderId) { %>
             <a href="/orders/<%= n.OrderId %>" class="btn btn-secondary btn-sm">
-              Xem đơn #<%= n.OrderId %>
+              Xem đơn <%= n.OrderCode || ('#' + n.OrderId) %>
             </a>
           <% } %>
 

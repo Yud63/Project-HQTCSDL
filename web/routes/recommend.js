@@ -31,15 +31,10 @@ router.get('/recommend', async (req, res, next) => {
       }
     }
 
-    const flash = [];
-    if (req.query.dismissed === '1') flash.push({ type: 'success', msg: 'Đã ghi nhận thao tác Bỏ qua thành công.' });
-    if (req.query.clicked === '1') flash.push({ type: 'success', msg: 'Đã ghi nhận lượt xem Lab thành công.' });
-
     res.render('recommend/index', {
       title: 'Gợi ý phòng Lab',
       labs,
-      aiAdvice,
-      flash
+      aiAdvice
     });
   } catch (err) {
     next(err);
@@ -61,9 +56,6 @@ router.get('/recommend/preferences', async (req, res, next) => {
       { UserId: { type: sql.Int, value: user.id } }
     );
 
-    const flash = [];
-    if (req.query.saved === '1') flash.push({ type: 'success', msg: 'Đã lưu sở thích.' });
-
     res.render('recommend/preferences', {
       title: 'Sở thích gợi ý Lab',
       p: result.recordset?.[0] || {},
@@ -71,8 +63,7 @@ router.get('/recommend/preferences', async (req, res, next) => {
         ['ColorNegative', 'Phim màu âm bản'],
         ['BlackWhite', 'Phim đen trắng'],
         ['ColorSlide', 'Phim slide màu']
-      ],
-      flash
+      ]
     });
   } catch (err) {
     next(err);
@@ -110,7 +101,8 @@ router.post('/recommend/preferences', async (req, res, next) => {
       ExtraJson: null
     });
 
-    res.redirect('/recommend/preferences?saved=1');
+    req.flash('success', 'Đã lưu sở thích.');
+    res.redirect('/recommend/preferences');
   } catch (err) {
     next(err);
   }
@@ -144,10 +136,12 @@ router.post('/recommend/action', async (req, res, next) => {
           !Number.isSafeInteger(Number(labId))) {
         return res.status(400).send('Mã Lab không hợp lệ.');
       }
-      return res.redirect('/recommend?clicked=1');
+      req.flash('success', 'Đã ghi nhận lượt xem Lab thành công.');
+      return res.redirect('/recommend');
     }
 
-    res.redirect('/recommend?dismissed=1');
+    req.flash('success', 'Đã ghi nhận thao tác Bỏ qua thành công.');
+    res.redirect('/recommend');
   } catch (err) {
     next(err);
   }

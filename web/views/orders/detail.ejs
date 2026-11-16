@@ -183,7 +183,11 @@
                   else if (pCode.includes('bw') || pCode.includes('đen')) tagClass = 'bw';
                   else if (pCode.includes('e-6') || pCode.includes('e6')) tagClass = 'e6';
                 %>
-                <span class="film-tag <%= tagClass %>"><%= item.ProcessCode || 'C-41' %></span>
+                <% if ((item.ProcessCode || '').toUpperCase() === 'ANY') { %>
+                  <span class="muted">—</span>
+                <% } else { %>
+                  <span class="film-tag <%= tagClass %>"><%= item.ProcessCode || 'C-41' %></span>
+                <% } %>
               </td>
               <td><%= item.ScanQuality || 'Tiêu chuẩn' %></td>
               <td style="text-align: center;"><%= item.Quantity %> cuộn</td>

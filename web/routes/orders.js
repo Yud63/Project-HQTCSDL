@@ -332,10 +332,12 @@ router.get('/notifications', async (req, res, next) => {
     const notifications = await directQuery(
       'Customer',
       userId,
-      `SELECT NotificationId, UserId, Type, Title, Body, OrderId, IsRead, ReadAt, CreatedAt 
-       FROM arc.Notifications 
-       WHERE UserId = @UserId 
-       ORDER BY CreatedAt DESC`,
+      `SELECT n.NotificationId, n.UserId, n.Type, n.Title, n.Body, n.OrderId, o.OrderCode,
+              n.IsRead, n.ReadAt, n.CreatedAt
+       FROM arc.Notifications n
+       LEFT JOIN ord.Orders o ON o.OrderId = n.OrderId
+       WHERE n.UserId = @UserId
+       ORDER BY n.CreatedAt DESC`,
       { UserId: userId }
     );
 

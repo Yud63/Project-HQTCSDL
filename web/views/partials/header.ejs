@@ -14,7 +14,8 @@
   <div class="container nav-inner">
     <a class="brand" href="/">FilmLab</a>
     <ul class="nav-links">
-      <% _menu.forEach(function (item) { var active = _path === item.href || _path.indexOf(item.href + '/') === 0; %>
+      <% var _best = ''; _menu.forEach(function (m) { if ((_path === m.href || _path.indexOf(m.href + '/') === 0) && m.href.length > _best.length) _best = m.href; }); %>
+      <% _menu.forEach(function (item) { var active = item.href === _best; %>
         <li><a href="<%= item.href %>" class="<%= active ? 'active' : '' %>"><%= item.label %></a></li>
       <% }) %>
     </ul>

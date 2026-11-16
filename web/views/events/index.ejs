@@ -12,7 +12,7 @@
      var closed = new Date(deadline) <= now; %>
 <tr>
 <td><strong><%= e.Title %></strong><br><span class="badge"><%= e.EventType %></span> <span class="muted"><%= e.HostLabName || e.OrganizerName %></span></td>
-<td><%= new Date(e.StartAt).toLocaleString('vi-VN') %></td>
+<td style="white-space:nowrap"><%= new Date(e.StartAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
 <td><%= e.VenueName %><br><span class="muted"><%= e.City %></span></td>
 <td class="num"><%= Number(e.Fee||0) > 0 ? Number(e.Fee).toLocaleString('vi-VN') + ' đ' : 'Miễn phí' %></td>
 <td><% if (e.SeatsLeft > 0) { %><span class="badge badge-success">Còn <%= e.SeatsLeft %>/<%= e.Capacity %></span><% } else { %><span class="badge badge-warning">Hết chỗ</span><% } %>
@@ -35,7 +35,7 @@
 <div class="table-wrap"><table class="table"><thead><tr><th>Sự kiện</th><th>Thời gian</th><th>Địa điểm</th><th>Trạng thái</th><th>Thanh toán</th></tr></thead><tbody>
 <% mine.forEach(function(r){ %><tr>
 <td><strong><%= r.Title %></strong> <span class="badge"><%= r.EventType %></span></td>
-<td><%= new Date(r.StartAt).toLocaleString('vi-VN') %></td>
+<td style="white-space:nowrap"><%= new Date(r.StartAt).toLocaleString('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }) %></td>
 <td><%= r.VenueName %>, <%= r.City %></td>
 <td><span class="badge <%= (r.Status==='Registered'||r.Status==='Attended') ? 'badge-success' : (r.Status==='Waitlisted' ? 'badge-warning' : '') %>"><%= r.Status %></span></td>
 <td><%= r.IsPaid ? 'Đã thanh toán' : 'Chưa thanh toán' %></td>
