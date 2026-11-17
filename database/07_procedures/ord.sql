@@ -586,3 +586,20 @@ BEGIN
     ORDER BY r.CreatedAt DESC, r.ReviewId DESC;
 END
 GO
+
+CREATE OR ALTER PROCEDURE ord.sp_FindMyOrderByCode
+    @OrderCode NVARCHAR(40),
+    @UserId    INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    EXEC sp_set_session_context @key = N'UserId', @value = @UserId;
+
+    -- Không khớp mã hoặc đơn của người khác: trả rỗng, không ném lỗi
+    SELECT TOP (1) o.OrderId
+    FROM ord.Orders o
+    WHERE o.OrderCode = @OrderCode
+      AND o.CustomerId = @UserId
+      AND o.IsDeleted = 0;
+END
+GO

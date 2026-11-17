@@ -5,6 +5,7 @@ const { sql } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
 const { HttpError } = require('../lib/errors');
 const gemini = require('../lib/gemini');
+const chatTools = require('../lib/chatTools');
 
 const CHAT_ROLES = ['Customer', 'LabOwner', 'Expert'];
 const MAX_QUESTION = 400; // giới hạn của ai.sp_SearchKnowledge
@@ -46,6 +47,34 @@ router.post('/chat/send', requireRole(...CHAT_ROLES), async (req, res) => {
 
   // Ghi câu hỏi trước, để Gemini lỗi vẫn còn dấu vết
   await logMessage(req, sessionId, 'User', question);
+
+    // Ý định cần dữ liệu DB của chính người dùng: xử lý trước RAG
+  const tool = await chatTools.route(req, question);
+  if (tool) {
+    if (tool.reply) {
+      await logMessage(req, sessionId, 'Assistant', tool.reply, { model: `rule-${tool.intent}`, sources: [] });
+      return res.json({ answer: tool.reply, sources: [] });
+    }
+    let r;
+    try {
+      r = await gemini.answerWithData(question, tool.dataText);
+    } catch (e) {
+      console.error('[chat] Gemini lỗi:', e.message);
+      return res.status(502).json({ error: BUSY });
+    }
+    try {
+      await logMessage(req, sessionId, 'Assistant', r.text, {
+        model: r.model,
+        promptTokens: r.promptTokens,
+        completionTokens: r.completionTokens,
+        latencyMs: r.latencyMs,
+        sources: [{ tool: tool.intent }],
+      });
+    } catch (e) {
+      console.error('[chat] Không ghi được log trả lời:', e.message);
+    }
+    return res.json({ answer: r.text, sources: [tool.sourceLabel] });
+  }
 
   const found = await req.callProc('ai.sp_SearchKnowledge', {
     UserId: user.id,

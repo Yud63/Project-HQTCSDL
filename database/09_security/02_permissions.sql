@@ -206,3 +206,7 @@ GRANT EXECUTE ON lab.sp_GetReferenceData TO role_Customer, role_LabOwner, role_E
 GRANT EXECUTE ON ai.sp_SearchKnowledge   TO role_Customer, role_LabOwner, role_Expert;
 GRANT EXECUTE ON ord.sp_GetPublicLabReviews TO role_Customer, role_LabOwner;
 GRANT EXECUTE ON ai.sp_RecordOrderedLab     TO role_Customer;
+
+
+-- ===== Việc 2: AI chat tra đơn của chính khách =====
+GRANT EXECUTE ON ord.sp_FindMyOrderByCode TO role_Customer;
