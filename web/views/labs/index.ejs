@@ -36,7 +36,7 @@
     <% if (lab.DistanceKm != null) { %><p>Cách <%= Number(lab.DistanceKm).toLocaleString('vi-VN') %> km</p><% } %>
     <a class="btn" href="/labs/<%= lab.LabId %>">Xem chi tiết</a>
   </article><% } %></div>
-<script>
+<script nonce="<%= cspNonce %>">
   const keyword = document.getElementById('keyword');
   const city = document.getElementById('city');
   const normalize = s => s.toLocaleLowerCase('vi').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd').trim();

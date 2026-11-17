@@ -2,6 +2,8 @@
 const fs = require('fs');
 const path = require('path');
 const express = require('express');
+const crypto = require('crypto');
+const helmet = require('helmet');
 const session = require('express-session');
 const config = require('./lib/config');
 const { callProc } = require('./lib/db');
@@ -16,6 +18,25 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
 fs.mkdirSync(config.uploadDir, { recursive: true });
+
+// Nonce mới cho mỗi request, dùng cho <script> inline trong view
+app.use((req, res, next) => {
+  res.locals.cspNonce = crypto.randomBytes(16).toString('base64');
+  next();
+});
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    useDefaults: true,
+    directives: {
+      'script-src': ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
+      'script-src-attr': ["'unsafe-inline'"],
+      // Chỉ ép https khi chạy sau tunnel; trên http://localhost sẽ làm hỏng trang
+      'upgrade-insecure-requests': config.behindProxy ? [] : null,
+    },
+  },
+  hsts: config.behindProxy,
+}));
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
