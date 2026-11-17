@@ -3,6 +3,7 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const { sql, callProc } = require('../lib/db');
 const { ROLES, startSession, destroySession } = require('../lib/auth');
+const { loginLimiter, registerLimiter } = require('../lib/rateLimit');
 
 const BCRYPT_COST = 10;
 const PENDING_MS = 5 * 60 * 1000;
@@ -36,7 +37,7 @@ router.get('/login', (req, res) => {
   return loginPage(res, 200, {});
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginLimiter, async (req, res) => {
   const body = req.body || {};
   const email = String(body.email || '').trim();
   const password = String(body.password || '');
@@ -102,7 +103,7 @@ router.get('/register', (req, res) => {
   return registerPage(res, 200, {});
 });
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerLimiter, async (req, res) => {
   const b = req.body || {};
   const email = String(b.email || '').trim();
   const fullName = String(b.fullName || '').trim();

@@ -6,6 +6,7 @@ const { requireRole } = require('../lib/auth');
 const { HttpError } = require('../lib/errors');
 const gemini = require('../lib/gemini');
 const chatTools = require('../lib/chatTools');
+const { chatLimiter } = require('../lib/rateLimit');
 
 const CHAT_ROLES = ['Customer', 'LabOwner', 'Expert'];
 const MAX_QUESTION = 400; // giới hạn của ai.sp_SearchKnowledge
@@ -36,7 +37,7 @@ router.get('/chat', requireRole(...CHAT_ROLES), (req, res) => {
   res.render('chat', { title: 'Trợ lý AI', maxLen: MAX_QUESTION });
 });
 
-router.post('/chat/send', requireRole(...CHAT_ROLES), async (req, res) => {
+router.post('/chat/send', requireRole(...CHAT_ROLES), chatLimiter, async (req, res) => {
   const question = String((req.body || {}).message || '').trim();
   if (!question) throw new HttpError(400, 'Vui lòng nhập câu hỏi.');
   if (question.length > MAX_QUESTION) throw new HttpError(400, `Câu hỏi tối đa ${MAX_QUESTION} ký tự.`);

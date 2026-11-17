@@ -12,6 +12,7 @@ const { uploadDir } = require('../lib/config');
 
 const ownerOnly = requireRole('LabOwner');
 const scansDir = path.join(uploadDir, 'owner');
+const { uploadLimiter } = require('../lib/rateLimit');
 const PAGE_SIZE = 20;
 const int = (value) => ({ type: sql.Int, value });
 const text = (v, max = 255) => String(v == null ? '' : v).trim().slice(0, max);
@@ -349,7 +350,7 @@ async function checkOwnOrder(req, res, next) {
   ownedLab(data, order.LabId);
   next();
 }
-router.post('/owner/orders/:id/scans', ownerOnly, uploadOne, checkOwnOrder, async (req, res) => {
+router.post('/owner/orders/:id/scans', ownerOnly, uploadLimiter, uploadOne, checkOwnOrder, async (req, res) => {
   const id = positiveId(req.params.id);
   const file = req.file;
   if (!file) throw new HttpError(400, 'Vui lòng chọn ảnh scan.');

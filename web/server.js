@@ -21,7 +21,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-// Session lưu trong bộ nhớ (mất khi restart server)
+// Session lưu trong bảng iam.Sessions (SQL Server), còn nguyên khi restart server
 app.use(session({
   name: 'fl.sid',
   store: new SqlSessionStore(),
