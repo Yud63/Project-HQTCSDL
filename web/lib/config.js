@@ -11,10 +11,12 @@ function required(name) {
 const bool = (v, def) => (v === undefined || v === '' ? def : String(v).toLowerCase() === 'true');
 
 const nodeEnv = process.env.NODE_ENV || 'production';
+const behindProxy = bool(process.env.TRUST_PROXY, false);
 
 module.exports = {
   nodeEnv,
   isDev: nodeEnv === 'development',
+  behindProxy,
   port: Number(process.env.PORT) || 3000,
   sessionSecret: required('SESSION_SECRET'),
   db: {

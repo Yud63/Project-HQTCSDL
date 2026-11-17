@@ -139,3 +139,15 @@ CREATE TABLE iam.DeliveryPartners
     CONSTRAINT FK_DeliveryPartners_Users FOREIGN KEY (UserId) REFERENCES iam.Users(UserId)
 );
 GO
+
+GO
+IF OBJECT_ID(N'iam.Sessions', N'U') IS NULL
+BEGIN
+    CREATE TABLE iam.Sessions (
+        Sid       NVARCHAR(128) NOT NULL CONSTRAINT PK_iam_Sessions PRIMARY KEY,
+        Data      NVARCHAR(MAX) NOT NULL,
+        ExpiresAt DATETIME2(0)  NOT NULL
+    );
+    CREATE INDEX IX_iam_Sessions_ExpiresAt ON iam.Sessions (ExpiresAt);
+END
+GO

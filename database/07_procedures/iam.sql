@@ -354,3 +354,56 @@ BEGIN
     END CATCH
 END
 GO
+
+GO
+CREATE OR ALTER PROCEDURE iam.sp_SessionGet
+    @Sid NVARCHAR(128)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT Data
+    FROM iam.Sessions
+    WHERE Sid = @Sid AND ExpiresAt > SYSUTCDATETIME();
+END
+GO
+
+CREATE OR ALTER PROCEDURE iam.sp_SessionSet
+    @Sid       NVARCHAR(128),
+    @Data      NVARCHAR(MAX),
+    @ExpiresAt DATETIME2(0)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        DELETE FROM iam.Sessions WHERE ExpiresAt <= SYSUTCDATETIME();
+
+        MERGE iam.Sessions WITH (HOLDLOCK) AS t
+        USING (SELECT @Sid AS Sid) AS s ON t.Sid = s.Sid
+        WHEN MATCHED THEN UPDATE SET Data = @Data, ExpiresAt = @ExpiresAt
+        WHEN NOT MATCHED THEN INSERT (Sid, Data, ExpiresAt) VALUES (@Sid, @Data, @ExpiresAt);
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE iam.sp_SessionTouch
+    @Sid       NVARCHAR(128),
+    @ExpiresAt DATETIME2(0)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    UPDATE iam.Sessions SET ExpiresAt = @ExpiresAt WHERE Sid = @Sid;
+END
+GO
+
+CREATE OR ALTER PROCEDURE iam.sp_SessionDestroy
+    @Sid NVARCHAR(128)
+AS
+BEGIN
+    SET NOCOUNT ON;
+    DELETE FROM iam.Sessions WHERE Sid = @Sid;
+END
+GO

@@ -48,6 +48,7 @@ Kết quả mong đợi: log nạp các file `routes/*.js`, dòng cuối `FilmLa
 | `GEMINI_MODEL` | Model Gemini chính. Mặc định `gemini-3.8-flash` (có sẵn trong `lib/config.js`, không cần điền) |
 | `GEMINI_FALLBACK_MODELS` | Model dự phòng, phân tách bằng dấu phẩy, thử lần lượt khi model chính quá tải (429/5xx). Mặc định `gemini-3.5-flash-lite,gemini-3.6-flash` |
 | `SESSION_SECRET` | Bắt buộc, thiếu là server không lên |
+| `TRUST_PROXY` | Để trống khi chạy `localhost`. Đặt `true` khi chạy sau tunnel/HTTPS: bật `trust proxy` và cookie `secure`. Đặt `true` mà vào bằng `http://localhost` thì đăng nhập xong bị văng về `/login` (cookie `secure` không được giữ) |
 
 Tuyệt đối không commit `.env`, không gửi `.env` hoặc ảnh chụp `.env` lên chat, nhóm, AI.
 
@@ -61,6 +62,7 @@ Tuyệt đối không commit `.env`, không gửi `.env` hoặc ảnh chụp `.e
 | `/dev/...` ra 404 | Đang `NODE_ENV=production` | Sửa `.env`, Ctrl + S, `rs` |
 | Thiếu biến `...` trong `.env` | Thiếu `SESSION_SECRET`, `DB_SERVER` hoặc `DB_NAME` | Điền theo `.env.example` |
 | `rs` báo "not recognized" | Gõ nhầm vào terminal PowerShell thường | `rs` chỉ gõ ở terminal đang chạy nodemon |
+| Đăng nhập xong bị văng về `/login` trên `localhost` | `.env` còn `TRUST_PROXY=true` (cookie `secure` bị bỏ qua qua HTTP) | Xóa dòng `TRUST_PROXY`, Ctrl + S, `rs`. Chỉ dùng `TRUST_PROXY=true` khi vào bằng link tunnel (HTTPS) |
 
 Ghi chú PowerShell: terminal đang chạy `npm run dev` bị chiếm, lệnh khác phải mở terminal thứ hai (nút `+`). Xóa nhiều file dùng `Remove-Item a, b` (lệnh `del a b c` lỗi). Gọi HTTP dùng `curl.exe`, không dùng `curl`.
 
@@ -182,6 +184,14 @@ throw new HttpError(404, 'Không tìm thấy đơn hàng.');
 | `requireLogin` | Chưa đăng nhập thì chuyển `/login` kèm cảnh báo, sau khi đăng nhập quay lại đúng trang cũ |
 | `requireRole('Customer', ...)` | Sai role thì lỗi 403 |
 | Các role hợp lệ | `Customer`, `LabOwner`, `Expert`, `Delivery`, `Admin` |
+
+Session lưu trong bảng `iam.Sessions` (store tự viết `lib/sessionStore.js`, gọi 4 SP `iam.sp_SessionGet/Set/Touch/Destroy` bằng login `fl_auth`), nên restart server không làm mất đăng nhập. Không cần cài thêm package. DB đã dựng từ trước phải bổ sung (chạy từng lệnh, ở gốc repo):
+
+    sqlcmd -C -S localhost -d FilmLabDB -E -I -b -f 65001 -i database\07_procedures\iam.sql
+    sqlcmd -C -S localhost -d FilmLabDB -E -I -b -f 65001 -Q "IF OBJECT_ID(N'iam.Sessions', N'U') IS NULL BEGIN CREATE TABLE iam.Sessions (Sid NVARCHAR(128) NOT NULL CONSTRAINT PK_iam_Sessions PRIMARY KEY, Data NVARCHAR(MAX) NOT NULL, ExpiresAt DATETIME2(0) NOT NULL); CREATE INDEX IX_iam_Sessions_ExpiresAt ON iam.Sessions (ExpiresAt); END"
+    sqlcmd -C -S localhost -d FilmLabDB -E -I -b -f 65001 -Q "GRANT EXECUTE ON iam.sp_SessionGet TO role_Auth; GRANT EXECUTE ON iam.sp_SessionSet TO role_Auth; GRANT EXECUTE ON iam.sp_SessionTouch TO role_Auth; GRANT EXECUTE ON iam.sp_SessionDestroy TO role_Auth;"
+
+DB dựng mới bằng `99_run_all.sql` thì có sẵn, không cần làm gì thêm. Không chạy cả file `01_tables\iam.sql` trên DB đã có (lỗi 2714 vì `CREATE TABLE iam.Users` đã tồn tại).
 
 ### Mẫu route (chép rồi đổi tên)
 
@@ -336,6 +346,20 @@ Checklist mỗi màn hình:
 | 4 | Hai tài khoản cùng role | Mỗi người chỉ thấy dữ liệu của mình (RLS) |
 | 5 | Nhập dữ liệu sai, thiếu, trùng | Hiện thông báo lỗi hợp lý, không trang trắng, không 500 |
 | 6 | Mở view ở cả 2 trạng thái | Không lỗi khi danh sách rỗng (`class="empty"`) |
+
+## 9b. Demo qua tunnel (tạm thời, không phải deploy lâu dài)
+
+Web chạy trên máy bạn, tunnel cấp link HTTPS công khai tạm thời. Link chết khi tắt tunnel, mỗi lần mở là link mới.
+
+| Bước | Việc |
+|---|---|
+| 1 | Cài một lần: `winget install --id Cloudflare.cloudflared`, mở lại terminal, kiểm tra `cloudflared --version` |
+| 2 | Trong `web\.env`: `NODE_ENV=production` (tắt `/dev/login`) và `TRUST_PROXY=true`, Ctrl + S, `rs` ở terminal nodemon |
+| 3 | Terminal thứ ba: `cloudflared tunnel --url http://localhost:3000`, lấy link `https://....trycloudflare.com` trong log |
+| 4 | Đăng nhập bằng `/login` (mật khẩu thật). `/dev/login` trả 404 là đúng |
+| 5 | Xong: Ctrl + C ở terminal tunnel, xóa dòng `TRUST_PROXY=true`, `rs` |
+
+Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mật khẩu 7 login `fl_*` và user mẫu, đổi `SESSION_SECRET`. Hiện chưa có rate limit và `helmet`, nên chỉ mở tunnel khi cần và gửi link đúng người. Không mở cổng 1433, không port forwarding.
 
 
 ## 10. Dựng database (làm một lần trên máy mới)

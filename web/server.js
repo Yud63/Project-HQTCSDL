@@ -7,9 +7,11 @@ const config = require('./lib/config');
 const { callProc } = require('./lib/db');
 const { HttpError, notFound, errorHandler } = require('./lib/errors');
 const { menuFor } = require('./lib/nav');
+const SqlSessionStore = require('./lib/sessionStore');
 
 const app = express();
 app.disable('x-powered-by');
+if (config.behindProxy) app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
@@ -22,10 +24,11 @@ app.use(express.json());
 // Session lưu trong bộ nhớ (mất khi restart server)
 app.use(session({
   name: 'fl.sid',
+  store: new SqlSessionStore(),
   secret: config.sessionSecret,
   resave: false,
   saveUninitialized: false,
-  cookie: { httpOnly: true, sameSite: 'lax', maxAge: 8 * 60 * 60 * 1000 },
+  cookie: { httpOnly: true, sameSite: 'lax', secure: config.behindProxy, maxAge: 8 * 60 * 60 * 1000 },
 }));
 
 // Flash + biến dùng chung cho view + req.callProc

@@ -193,6 +193,10 @@ GO
 -- ===== 8. Đợt 8a: đăng nhập, đăng ký và đường đọc cho web =====
 GRANT EXECUTE ON iam.sp_RegisterUser    TO role_Auth;
 GRANT EXECUTE ON iam.sp_GetLoginInfo    TO role_Auth;
+GRANT EXECUTE ON iam.sp_SessionGet     TO role_Auth;
+GRANT EXECUTE ON iam.sp_SessionSet     TO role_Auth;
+GRANT EXECUTE ON iam.sp_SessionTouch   TO role_Auth;
+GRANT EXECUTE ON iam.sp_SessionDestroy TO role_Auth;
 GRANT EXECUTE ON iam.sp_GetMyAddresses  TO role_Customer;
 GRANT EXECUTE ON ord.sp_GetMyOrders     TO role_Customer, role_LabOwner;
 GRANT EXECUTE ON ord.sp_GetOrderDetail  TO role_Customer, role_LabOwner;
