@@ -10,6 +10,7 @@ const { callProc } = require('./lib/db');
 const { HttpError, notFound, errorHandler } = require('./lib/errors');
 const { menuFor } = require('./lib/nav');
 const SqlSessionStore = require('./lib/sessionStore');
+const csrfGuard = require('./lib/csrf');
 
 const app = express();
 app.disable('x-powered-by');
@@ -79,6 +80,8 @@ app.use((req, res, next) => {
 });
 
 // Tự nạp mọi file trong routes/ (file export router; export null thì bỏ qua)
+// Chống CSRF: phải đứng trước các router
+app.use(csrfGuard);
 const routesDir = path.join(__dirname, 'routes');
 for (const file of fs.readdirSync(routesDir).filter((f) => f.endsWith('.js')).sort()) {
   const router = require(path.join(routesDir, file));
