@@ -39,5 +39,5 @@ module.exports = {
   geminiModel: process.env.GEMINI_MODEL || 'gemini-3.8-flash',
   geminiFallbackModels: (process.env.GEMINI_FALLBACK_MODELS || 'gemini-3.5-flash-lite,gemini-3.6-flash')
     .split(',').map((s) => s.trim()).filter(Boolean),
-  uploadDir: path.join(__dirname, '..', 'uploads'),
+  uploadDir: path.resolve(__dirname, '..', process.env.UPLOAD_DIR || 'uploads'),
 };
