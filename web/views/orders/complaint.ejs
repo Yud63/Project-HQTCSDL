@@ -17,7 +17,7 @@
     </div>
   </div>
 
-  <form action="/orders/<%= order.OrderId %>/complaint" method="POST">
+  <form action="/orders/<%= order.OrderId %>/complaint" method="POST"><%- include('../partials/csrf') %>
     <!-- Phân loại khiếu nại -->
     <div class="form-group">
       <label for="complaintCategory" class="form-label">

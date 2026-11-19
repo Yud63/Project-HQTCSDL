@@ -21,20 +21,20 @@
 </td>
 <td>
 <% if (seller && s === 'Pending') { %>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Confirmed"><button class="btn btn-sm" type="submit">Xác nhận</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><%- include('../partials/csrf') %><input type="hidden" name="status" value="Confirmed"><button class="btn btn-sm" type="submit">Xác nhận</button></form>
 <% } %>
 <% if (seller && s === 'Confirmed') { %>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Shipped"><button class="btn btn-sm" type="submit">Đã giao hàng</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><%- include('../partials/csrf') %><input type="hidden" name="status" value="Shipped"><button class="btn btn-sm" type="submit">Đã giao hàng</button></form>
 <% } %>
 <% if (buyer && s === 'Shipped') { %>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Completed"><button class="btn btn-sm" type="submit">Đã nhận hàng</button></form>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Disputed"><input type="text" name="reason" placeholder="Lý do khiếu nại" maxlength="500" required> <button class="btn btn-sm btn-danger" type="submit">Khiếu nại</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><%- include('../partials/csrf') %><input type="hidden" name="status" value="Completed"><button class="btn btn-sm" type="submit">Đã nhận hàng</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><%- include('../partials/csrf') %><input type="hidden" name="status" value="Disputed"><input type="text" name="reason" placeholder="Lý do khiếu nại" maxlength="500" required> <button class="btn btn-sm btn-danger" type="submit">Khiếu nại</button></form>
 <% } %>
 <% if (s === 'Pending' || s === 'Confirmed') { %>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><input type="hidden" name="status" value="Cancelled"><input type="text" name="reason" placeholder="Lý do hủy" maxlength="255" required> <button class="btn btn-sm btn-danger" type="submit">Hủy</button></form>
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/status" style="margin:0 0 6px"><%- include('../partials/csrf') %><input type="hidden" name="status" value="Cancelled"><input type="text" name="reason" placeholder="Lý do hủy" maxlength="255" required> <button class="btn btn-sm btn-danger" type="submit">Hủy</button></form>
 <% } %>
 <% if (buyer && s === 'Completed' && t.BuyerRating == null) { %>
-<form method="post" action="/market/transactions/<%= t.TransactionId %>/rate" style="margin:0">
+<form method="post" action="/market/transactions/<%= t.TransactionId %>/rate" style="margin:0"><%- include('../partials/csrf') %>
   <select name="rating"><% [5,4,3,2,1].forEach(function(n){ %><option value="<%= n %>"><%= n %> sao</option><% }) %></select>
   <input type="text" name="comment" placeholder="Nhận xét" maxlength="500">
   <button class="btn btn-sm" type="submit">Đánh giá</button>

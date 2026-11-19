@@ -316,7 +316,7 @@
       Đơn hàng chỉ có thể hủy trước khi Lab tiến hành tráng phim buồng tối. Vui lòng cho biết lý do hủy đơn:
     </p>
 
-    <form id="cancelOrderForm" action="/orders/<%= order.OrderId %>/cancel" method="POST">
+    <form id="cancelOrderForm" action="/orders/<%= order.OrderId %>/cancel" method="POST"><%- include('../partials/csrf') %>
       <div class="form-group">
         <input type="text" id="cancelReasonInput" name="reason" class="form-control" placeholder="Ví dụ: Đổi kế hoạch chụp, gửi nhầm lab, thay đổi dịch vụ..." required>
       </div>

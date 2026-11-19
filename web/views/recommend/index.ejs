@@ -12,7 +12,7 @@
 <% labs.forEach(function (lab) { %><tr>
 <td><%= lab.Rank %></td><td><strong><%= lab.LabName %></strong></td><td class="num"><%= lab.Score %></td><td class="num"><%= lab.AvgRating %></td><td class="num"><%= lab.DistanceKm ?? 'Chưa có' %></td>
 <td>
-<form method="post" action="/recommend/action" style="display:inline">
+<form method="post" action="/recommend/action" style="display:inline"><%- include('../partials/csrf') %>
 <input type="hidden" name="recLogId" value="<%= lab.RecLogId %>">
 <input type="hidden" name="labId" value="<%= lab.LabId %>">
 <button class="btn btn-sm" name="action" value="Clicked">Xem Lab</button>

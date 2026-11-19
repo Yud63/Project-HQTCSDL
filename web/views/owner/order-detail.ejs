@@ -19,7 +19,7 @@
 </div>
 </div>
 <h2>Cập nhật tiến độ</h2>
-<form method="post" action="/owner/orders/<%= order.OrderId %>/stage" class="card form">
+<form method="post" action="/owner/orders/<%= order.OrderId %>/stage" class="card form"><%- include('../partials/csrf') %>
 <label>Chuyển sang trạng thái <select name="stageId" required><% stages.forEach(function(s){ %><option value="<%= s.StageId %>" <%= s.StageId===order.StageId?'selected':'' %>><%= s.StageName %> (<%= s.StageCode %>)</option><% }) %></select></label>
 <label>Ghi chú <textarea name="note" rows="2" maxlength="255"></textarea></label>
 <p class="muted">Chỉ chuyển trạng thái hợp lệ theo SQL; đơn chưa thanh toán đủ không thể hoàn tất.</p>
@@ -29,7 +29,7 @@
 <% if(!items.length){ %><div class="card empty">Không có dòng dịch vụ.</div><% } else { %>
 <div class="table-wrap"><table class="table"><thead><tr><th>Mã dòng</th><th>Gói dịch vụ</th><th>Phim</th><th class="num">Số lượng</th><th class="num">Đơn giá</th><th class="num">Thành tiền</th></tr></thead><tbody><% items.forEach(function(i){ %><tr><td>#<%= i.OrderItemId %></td><td><%= i.PackageName %></td><td><%= i.FilmStock || '—' %></td><td class="num"><%= i.Quantity %></td><td class="num"><%= Number(i.UnitPriceSnapshot||0).toLocaleString('vi-VN') %> đ</td><td class="num"><%= Number(i.LineTotal||0).toLocaleString('vi-VN') %> đ</td></tr><% }) %></tbody></table></div><% } %>
 <h2>Tải lên ảnh scan</h2>
-<form method="post" action="/owner/orders/<%= order.OrderId %>/scans" enctype="multipart/form-data" class="card form">
+<form method="post" action="/owner/orders/<%= order.OrderId %>/scans?_csrf=<%= locals.csrfToken || '' %>" enctype="multipart/form-data" class="card form">
 <label>Ảnh JPEG / PNG / TIFF (tối đa 200 MB) <input type="file" name="scan" accept="image/jpeg,image/png,image/tiff" required></label>
 <label>Đính kèm dòng đơn (tùy chọn) <select name="orderItemId"><option value="">Không chọn</option><% items.forEach(function(i){ %><option value="<%= i.OrderItemId %>">#<%= i.OrderItemId %> – <%= i.PackageName %></option><% }) %></select></label>
 <label>Số khung phim (tùy chọn) <input type="number" name="frameNumber" min="1" max="32767"></label>

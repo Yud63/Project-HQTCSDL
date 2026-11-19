@@ -16,7 +16,7 @@
 <td><span class="badge <%= d.Status === 'PickedUp' ? 'badge-warning' : (d.Status === 'Assigned' ? 'badge-success' : '') %>"><%= stLabel %></span></td>
 <td>
 <% if (d.Status === 'Assigned' || d.Status === 'PickedUp') { %>
-<form method="post" action="/delivery/<%= d.DeliveryRequestId %>/status" style="display:flex;gap:6px;flex-wrap:wrap">
+<form method="post" action="/delivery/<%= d.DeliveryRequestId %>/status" style="display:flex;gap:6px;flex-wrap:wrap"><%- include('../partials/csrf') %>
   <input type="text" name="reason" maxlength="255" placeholder="Lý do (nếu thất bại)">
   <% if (d.Status === 'Assigned') { %><button class="btn btn-sm" name="status" value="PickedUp">Đã lấy hàng</button><% } %>
   <% if (d.Status === 'PickedUp') { %><button class="btn btn-sm" name="status" value="Delivered">Đã giao</button><% } %>

@@ -5,6 +5,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title><%= locals.title ? locals.title + ' · ' : '' %>FilmLab</title>
+    <meta name="csrf-token" content="<%= locals.csrfToken || '' %>">
   <link rel="stylesheet" href="/css/style.css">
   <% (locals.styles || []).forEach(function (s) { %><link rel="stylesheet" href="/css/<%= s %>.css">
   <% }) %>
@@ -23,7 +24,7 @@
       <% if (_user) { %>
         <span class="user-name"><%= _user.name %></span>
         <span class="badge"><%= _user.role %></span>
-        <form method="post" action="/logout"><button class="btn btn-sm btn-outline" type="submit">Đăng xuất</button></form>
+        <form method="post" action="/logout"><%- include('csrf') %><button class="btn btn-sm btn-outline" type="submit">Đăng xuất</button></form>
       <% } else { %>
         <a class="btn btn-sm btn-outline" href="/register">Đăng ký</a>
         <a class="btn btn-sm btn-primary" href="/login">Đăng nhập</a>

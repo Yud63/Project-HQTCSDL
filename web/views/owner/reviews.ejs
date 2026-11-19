@@ -9,7 +9,7 @@
 <p><span class="badge badge-success"><%= r.RatingOverall %>/5 sao</span> · Chất lượng scan: <%= r.RatingScanQuality??'—' %> · Tốc độ: <%= r.RatingSpeed??'—' %> · <span class="badge <%= r.IsVisible?'':'badge-warning' %>"><%= r.IsVisible?'Hiển thị':'Đã ẩn' %></span></p>
 <p><%= r.Comment || '(Không có bình luận)' %></p>
 <% if(r.LabReply){ %><div class="alert alert-info"><strong>Phản hồi của lab:</strong> <%= r.LabReply %></div><% } else if(r.IsVisible){ %>
-<form method="post" class="form" action="/owner/reviews/<%= r.ReviewId %>/reply"><label>Phản hồi đánh giá <textarea required name="reply" maxlength="1000" rows="2"></textarea></label><div><button class="btn btn-sm" type="submit">Gửi phản hồi</button></div></form>
+<form method="post" class="form" action="/owner/reviews/<%= r.ReviewId %>/reply"><%- include('../partials/csrf') %><label>Phản hồi đánh giá <textarea required name="reply" maxlength="1000" rows="2"></textarea></label><div><button class="btn btn-sm" type="submit">Gửi phản hồi</button></div></form>
 <% } %></div><% }) %>
 <% } %>
 <%- include('../partials/footer') %>

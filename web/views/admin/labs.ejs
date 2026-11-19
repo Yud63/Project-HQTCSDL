@@ -8,10 +8,10 @@
 <td><span class="badge <%= lab.ApprovalStatus === 'Approved' ? 'badge-success' : (lab.ApprovalStatus === 'Pending' ? 'badge-warning' : '') %>"><%= lab.ApprovalStatus %></span></td>
 <td>
 <% if (lab.ApprovalStatus === 'Pending') { %>
-<form method="post" action="/admin/labs/<%= lab.LabId %>/approve" style="display:inline">
+<form method="post" action="/admin/labs/<%= lab.LabId %>/approve" style="display:inline"><%- include('../partials/csrf') %>
 <input type="hidden" name="decision" value="Approved"><button class="btn btn-sm" type="submit">Duyệt</button>
 </form>
-<form method="post" action="/admin/labs/<%= lab.LabId %>/approve" style="display:inline">
+<form method="post" action="/admin/labs/<%= lab.LabId %>/approve" style="display:inline"><%- include('../partials/csrf') %>
 <input type="hidden" name="decision" value="Rejected"><button class="btn btn-sm btn-outline" type="submit">Từ chối</button>
 </form>
 <% } else { %>Đã xử lý<% } %>

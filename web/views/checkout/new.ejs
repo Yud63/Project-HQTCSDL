@@ -3,7 +3,7 @@
 <h1>Đặt dịch vụ tại <%= lab.LabName %></h1>
 <% if (!services.length) { %><p class="empty">Lab chưa có gói dịch vụ.</p><% } else { %>
 <p><a href="<%= addressUrl %>">Quản lý địa chỉ lấy và trả phim</a></p>
-<form class="form" action="/orders/new" method="post">
+<form class="form" action="/orders/new" method="post"><%- include('../partials/csrf') %>
 <input type="hidden" name="labId" value="<%= lab.LabId %>"><input type="hidden" name="rec" value="<%= rec %>">
 <h2>Chọn dịch vụ</h2><p>Nhập số lượng cho từng gói muốn đặt. Bỏ trống gói bạn không dùng.</p>
 <div class="grid"><% for (const s of services) { const format = formats.find(f => f.FormatId === s.FormatId); %>

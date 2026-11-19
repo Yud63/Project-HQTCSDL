@@ -26,7 +26,11 @@
 
     fetch('/chat/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+        'x-csrf-token': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+      },
       body: JSON.stringify({ message: text })
     })
       .then(function (r) {

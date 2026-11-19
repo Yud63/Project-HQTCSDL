@@ -6,10 +6,10 @@
 <h2><%= a.Label || a.RecipientName %> <%= a.IsDefault ? '· Mặc định' : '' %></h2>
 <p><%= a.RecipientName %> · <%= a.Phone %></p><p><%= [a.Line1,a.Ward,a.District,a.City].join(', ') %></p>
 <a href="<%= addressUrl(a.AddressId) %>#form">Sửa địa chỉ</a>
-<form method="post" action="<%= addressUrl() %>"><input type="hidden" name="addressId" value="<%= a.AddressId %>"><button class="btn btn-outline" name="action" value="delete">Xóa địa chỉ</button></form>
+<form method="post" action="<%= addressUrl() %>"><%- include('../partials/csrf') %><input type="hidden" name="addressId" value="<%= a.AddressId %>"><button class="btn btn-outline" name="action" value="delete">Xóa địa chỉ</button></form>
 </article><% } %></div>
 <h2 id="form"><%= edit.AddressId ? 'Sửa địa chỉ' : 'Thêm địa chỉ' %></h2>
-<form class="form card" method="post" action="<%= addressUrl() %>">
+<form class="form card" method="post" action="<%= addressUrl() %>"><%- include('../partials/csrf') %>
 <input type="hidden" name="addressId" value="<%= edit.AddressId || '' %>">
 <% for (const [key,[label,max]] of Object.entries(addressFields)) { %>
 <label><%= label %> <input name="<%= key %>" value="<%= edit[key] || '' %>" maxlength="<%= max %>" <%= key === 'Label' ? '' : 'required' %>></label><% } %>

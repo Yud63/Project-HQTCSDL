@@ -11,7 +11,7 @@
     </p>
   </div>
 
-  <form action="/orders/<%= order.OrderId %>/review" method="POST">
+  <form action="/orders/<%= order.OrderId %>/review" method="POST"><%- include('../partials/csrf') %>
     <!-- Đánh giá tổng thể (Bắt buộc) -->
     <div class="form-group">
       <label class="form-label" style="font-size: 1rem; color: var(--text-primary);">

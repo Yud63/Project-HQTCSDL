@@ -68,7 +68,7 @@
           <% } %>
 
           <% if (!n.IsRead) { %>
-            <form action="/notifications/<%= n.NotificationId %>/read" method="POST" style="margin: 0;">
+            <form action="/notifications/<%= n.NotificationId %>/read" method="POST" style="margin: 0;"><%- include('../partials/csrf') %>
               <button type="submit" class="btn btn-outline btn-sm" title="Đánh dấu đã đọc">
                 ✓ Đã đọc
               </button>

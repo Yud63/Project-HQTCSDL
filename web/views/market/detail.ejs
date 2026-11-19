@@ -39,7 +39,7 @@
   <% if (listing.ListingType === 'Sell') { %>
   <div class="card" style="margin-top:16px">
     <h2 style="margin-top:0">Đặt mua</h2>
-    <form method="post" action="/market/<%= listing.ListingId %>/order" class="form">
+    <form method="post" action="/market/<%= listing.ListingId %>/order" class="form"><%- include('../partials/csrf') %>
       <label>Số lượng <input type="number" name="quantity" min="1" max="<%= listing.Quantity %>" value="1" required></label>
       <label>Ghi chú cho người bán <textarea name="note" rows="2" maxlength="500"></textarea></label>
       <button class="btn" type="submit">Đặt mua</button>
@@ -48,7 +48,7 @@
   <% } %>
   <div class="card" style="margin-top:16px">
     <h2 style="margin-top:0"><%= listing.ListingType === 'Wanted' ? 'Liên hệ người đăng' : 'Nhắn tin cho người bán' %></h2>
-    <form method="post" action="/market/<%= listing.ListingId %>/message" class="form">
+    <form method="post" action="/market/<%= listing.ListingId %>/message" class="form"><%- include('../partials/csrf') %>
       <label>Nội dung <textarea name="body" rows="3" maxlength="1000" required></textarea></label>
       <button class="btn" type="submit">Gửi</button>
     </form>

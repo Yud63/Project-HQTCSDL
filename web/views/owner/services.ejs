@@ -3,7 +3,7 @@
 <h1>Dịch vụ – <%= lab.LabName %></h1>
 <p class="muted">Thay đổi giá, loại phim và trạng thái dịch vụ. Mọi thay đổi được ghi vào FilmLabDB.</p>
 <h2><%= form.labServiceId ? 'Sửa dịch vụ #' + form.labServiceId : 'Thêm dịch vụ' %></h2>
-<form method="post" class="card form" action="/owner/labs/<%= lab.LabId %>/services">
+<form method="post" class="card form" action="/owner/labs/<%= lab.LabId %>/services"><%- include('../partials/csrf') %>
  <input type="hidden" name="labServiceId" value="<%= form.labServiceId || '' %>">
  <label>Tên gói * <input name="packageName" maxlength="150" required value="<%= form.packageName || '' %>"></label>
  <label>Loại dịch vụ * <select name="serviceTypeId" required><option value="">Chọn loại dịch vụ</option><% types.forEach(function(t) { %><option value="<%= t.ServiceTypeId %>" <%= String(form.serviceTypeId)===String(t.ServiceTypeId)?'selected':'' %>><%= t.ServiceName %> (<%= t.Category %>)</option><% }) %></select></label>
@@ -27,7 +27,7 @@
 <td><%= s.TurnaroundDays %> ngày</td>
 <td><span class="badge <%= s.IsActive?'badge-success':'badge-warning' %>"><%= s.IsActive?'Đang bán':'Đã ẩn' %></span></td>
 <td><a class="btn btn-sm btn-outline" href="/owner/labs/<%= lab.LabId %>/services?edit=<%= s.LabServiceId %>">Sửa</a>
-<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/toggle"><button class="btn btn-sm btn-outline" type="submit"><%= s.IsActive?'Ẩn':'Bật' %></button></form>
-<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/delete" onsubmit="return confirm('Xóa mềm dịch vụ này?')"><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
+<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-outline" type="submit"><%= s.IsActive?'Ẩn':'Bật' %></button></form>
+<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/delete" onsubmit="return confirm('Xóa mềm dịch vụ này?')"><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
 </td></tr><% }) %></tbody></table></div><% } %>
 <%- include('../partials/footer') %>

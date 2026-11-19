@@ -22,9 +22,9 @@
 <% } else if (st === 'Waitlisted') { %><span class="badge badge-warning">Đang chờ</span>
 <% } else if (st === 'Attended') { %><span class="badge badge-success">Đã tham dự</span><% } %>
 <% if (st === 'Registered' || st === 'Waitlisted') { %>
-<form method="post" action="/events/<%= e.EventId %>/cancel" style="display:inline"><button class="btn btn-sm btn-outline" type="submit">Hủy</button></form>
+<form method="post" action="/events/<%= e.EventId %>/cancel" style="display:inline"><%- include('../partials/csrf') %><button class="btn btn-sm btn-outline" type="submit">Hủy</button></form>
 <% } else if (!active && !closed) { %>
-<form method="post" action="/events/<%= e.EventId %>/register"><button class="btn btn-sm" type="submit"><%= e.SeatsLeft > 0 ? 'Đăng ký' : 'Vào hàng chờ' %></button></form>
+<form method="post" action="/events/<%= e.EventId %>/register"><%- include('../partials/csrf') %><button class="btn btn-sm" type="submit"><%= e.SeatsLeft > 0 ? 'Đăng ký' : 'Vào hàng chờ' %></button></form>
 <% } else if (!active && closed) { %><span class="muted">Hết hạn đăng ký</span><% } %>
 </td>
 </tr><% }) %></tbody></table></div>
