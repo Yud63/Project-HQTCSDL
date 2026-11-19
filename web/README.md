@@ -359,7 +359,53 @@ Web chạy trên máy bạn, tunnel cấp link HTTPS công khai tạm thời. Li
 | 4 | Đăng nhập bằng `/login` (mật khẩu thật). `/dev/login` trả 404 là đúng |
 | 5 | Xong: Ctrl + C ở terminal tunnel, xóa dòng `TRUST_PROXY=true`, `rs` |
 
-Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mật khẩu 7 login `fl_*` và user mẫu, đổi `SESSION_SECRET`. Hiện chưa có rate limit và `helmet`, nên chỉ mở tunnel khi cần và gửi link đúng người. Không mở cổng 1433, không port forwarding.
+Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mật khẩu 7 login `fl_*` và user mẫu, đổi `SESSION_SECRET`. Đã có `helmet`, rate limit và CSRF (xem mục 9c), nhưng mật khẩu demo yếu nên chỉ mở tunnel khi cần và gửi link đúng người. Không mở cổng 1433, không port forwarding.
+
+## 9c. Bảo mật (helmet, rate limit, CSRF)
+
+### helmet (`server.js`)
+
+| Thành phần | Cấu hình |
+|---|---|
+| CSP | `useDefaults`; `script-src` gồm `'self'` và nonce mới cho mỗi request (`res.locals.cspNonce`), `<script>` inline trong view phải có `nonce` |
+| `script-src-attr` | `'unsafe-inline'` (cho `onclick` trong view hiện có) |
+| HSTS, `upgrade-insecure-requests` | Chỉ bật khi `TRUST_PROXY=true` (sau tunnel HTTPS); trên `http://localhost` bật sẽ làm hỏng trang |
+| Khác | `x-powered-by` tắt; header mặc định của helmet như `X-Frame-Options`, `nosniff`, `Referrer-Policy: no-referrer` |
+
+### Rate limit (`lib/rateLimit.js`)
+
+| Limiter | Route | Giới hạn | Khóa đếm |
+|---|---|---|---|
+| `loginLimiter` | `POST /login` | 10 lần **thất bại** / 15 phút (lần thành công không đếm) | IP |
+| `registerLimiter` | `POST /register` | 10 lần / 1 giờ | IP |
+| `chatLimiter` | `POST /chat/send` | 10 câu / 1 phút | User |
+| `uploadLimiter` | `POST /owner/orders/:id/scans` | 10 lần / 10 phút | User |
+
+| Lưu ý | Chi tiết |
+|---|---|
+| IP thật | Sau tunnel phải bật `TRUST_PROXY=true`, nếu không mọi người bị gộp thành một IP của cloudflared |
+| Bộ đếm | Lưu trong bộ nhớ, `rs` là reset |
+| Chưa có limiter | `POST /login/role` |
+| Đã test | Qua tunnel, điện thoại 4G bị chặn ở lần sai thứ 11; laptop (IP khác) vẫn đăng nhập được |
+
+### CSRF (`lib/csrf.js`)
+
+`csrfGuard` đứng trước mọi router, chỉ áp cho `POST`, `PUT`, `PATCH`, `DELETE`. Bị chặn trả `403` với nội dung "Yêu cầu bị từ chối (CSRF).", request bị chặn chưa tới limiter.
+
+| Lớp | Cách kiểm |
+|---|---|
+| 1. Header | `Sec-Fetch-Site` chỉ cho `same-origin` hoặc `none`. Không có thì so host của `Origin` với `Host`. Không có cả hai thì chặn |
+| 2. Token | Người đã đăng nhập có token 32 byte hex trong `req.session.csrfToken`, so bằng `crypto.timingSafeEqual`. Token lấy từ `req.body._csrf`, `req.query._csrf` hoặc header `x-csrf-token` |
+
+| Nơi gửi token | Cách làm |
+|---|---|
+| Form thường | `<%- include('../partials/csrf') %>` ngay sau thẻ `<form>` (input hidden `_csrf`) |
+| Form upload multipart | `?_csrf=<%= locals.csrfToken || '' %>` trên `action`, vì multer chạy sau guard nên body còn rỗng lúc guard kiểm |
+| Chat (`fetch`) | `chat.js` đọc `<meta name="csrf-token">` rồi gửi header `x-csrf-token` |
+
+**Quyết định miễn token:** `/login`, `/login/role`, `/register`, `/dev/login` (`TOKEN_EXEMPT`) không kiểm token nhưng **vẫn bị kiểm header**. Lý do: lúc này chưa có session đăng nhập, muốn có token phải bật `saveUninitialized`, khiến mỗi lượt truy cập tạo một dòng trong `iam.Sessions`.
+
+Khi test bằng `curl` đã đăng nhập: phải có cookie jar, header `Origin: http://localhost:3000` và token lấy từ meta `csrf-token`. Đã test: không token `403`, token sai `403`, token đúng `302`.
 
 
 ## 10. Dựng database (làm một lần trên máy mới)
