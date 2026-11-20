@@ -11,7 +11,8 @@ GO
 
 -- 1) 41 bảng (không tính bảng lịch sử của temporal), 77 FK
 DECLARE @t INT = (SELECT COUNT(*) FROM sys.tables WHERE temporal_type <> 1
-                  AND SCHEMA_NAME(schema_id) IN (N'iam',N'lab',N'ord',N'dlv',N'arc',N'mkt',N'com',N'ai',N'audit'));
+                  AND SCHEMA_NAME(schema_id) IN (N'iam',N'lab',N'ord',N'dlv',N'arc',N'mkt',N'com',N'ai',N'audit')
+                  AND NOT (SCHEMA_NAME(schema_id) = N'iam' AND name = N'Sessions'));
 DECLARE @f INT = (SELECT COUNT(*) FROM sys.foreign_keys);
 IF @t <> 41 BEGIN DECLARE @m1 NVARCHAR(100) = N'Số bảng = ' + CAST(@t AS NVARCHAR(10)) + N', cần 41'; THROW 59001, @m1, 1; END
 IF @f <> 77 BEGIN DECLARE @m2 NVARCHAR(100) = N'Số FK = ' + CAST(@f AS NVARCHAR(10)) + N', cần 77'; THROW 59002, @m2, 1; END

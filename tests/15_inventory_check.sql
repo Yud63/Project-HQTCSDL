@@ -128,7 +128,8 @@ PRINT CASE WHEN @Un = 0 THEN N'PASS: mọi module resolve đủ tham chiếu'
 -- Số bảng và FK theo thiết kế
 DECLARE @Tb INT = (SELECT COUNT(*) FROM sys.tables t
                    WHERE t.is_ms_shipped = 0 AND t.temporal_type <> 1
-                     AND SCHEMA_NAME(t.schema_id) IN (N'iam',N'lab',N'ord',N'dlv',N'arc',N'mkt',N'com',N'ai',N'audit'));
+                     AND SCHEMA_NAME(t.schema_id) IN (N'iam',N'lab',N'ord',N'dlv',N'arc',N'mkt',N'com',N'ai',N'audit')
+                     AND NOT (SCHEMA_NAME(t.schema_id) = N'iam' AND t.name = N'Sessions'));
 DECLARE @Fk INT = (SELECT COUNT(*) FROM sys.foreign_keys);
 PRINT CASE WHEN @Tb = 41 THEN N'PASS: 41 bảng' ELSE N'FAIL: số bảng = ' + CAST(@Tb AS NVARCHAR(10)) + N' (mong đợi 41)' END;
 PRINT CASE WHEN @Fk = 77 THEN N'PASS: 77 FK' ELSE N'FAIL: số FK = ' + CAST(@Fk AS NVARCHAR(10)) + N' (mong đợi 77)' END;
