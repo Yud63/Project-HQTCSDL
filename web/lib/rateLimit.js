@@ -17,6 +17,17 @@ const loginLimiter = rateLimit({
 });
 
 // Đăng ký: 10 lần / giờ theo IP (mỗi lần tốn bcrypt)
+// Chọn vai trò: chỉ đếm lần thất bại (status >= 400), theo IP. 10 lần / 15 phút
+const roleLimiter = rateLimit({
+  ...base,
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  skipSuccessfulRequests: true,
+  handler: (req, res) => {
+    req.flash('danger', 'Bạn chọn vai trò sai quá nhiều lần. Vui lòng đăng nhập lại sau 15 phút.');
+    res.redirect('/login');
+  },
+});
 const registerLimiter = rateLimit({
   ...base,
   windowMs: 60 * 60 * 1000,
@@ -50,4 +61,4 @@ const uploadLimiter = rateLimit({
   },
 });
 
-module.exports = { loginLimiter, registerLimiter, chatLimiter, uploadLimiter };
+module.exports = { loginLimiter, roleLimiter, registerLimiter, chatLimiter, uploadLimiter };

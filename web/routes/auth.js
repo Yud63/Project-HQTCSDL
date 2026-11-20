@@ -3,7 +3,7 @@ const router = require('express').Router();
 const bcrypt = require('bcrypt');
 const { sql, callProc } = require('../lib/db');
 const { ROLES, startSession, destroySession } = require('../lib/auth');
-const { loginLimiter, registerLimiter } = require('../lib/rateLimit');
+const { loginLimiter, roleLimiter, registerLimiter } = require('../lib/rateLimit');
 
 const BCRYPT_COST = 10;
 const PENDING_MS = 5 * 60 * 1000;
@@ -83,7 +83,7 @@ router.post('/login', loginLimiter, async (req, res) => {
   return rolePage(res, 200, roles);
 });
 
-router.post('/login/role', async (req, res) => {
+router.post('/login/role', roleLimiter, async (req, res) => {
   const p = req.session.pendingLogin;
   if (!p || Date.now() - p.at > PENDING_MS) {
     delete req.session.pendingLogin;

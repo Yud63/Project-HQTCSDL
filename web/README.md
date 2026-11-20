@@ -377,6 +377,7 @@ Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mậ
 | Limiter | Route | Giới hạn | Khóa đếm |
 |---|---|---|---|
 | `loginLimiter` | `POST /login` | 10 lần **thất bại** / 15 phút (lần thành công không đếm) | IP |
+| `roleLimiter` | `POST /login/role` | 10 lần **thất bại** (vai trò không hợp lệ) / 15 phút, lần thành công không đếm. Khi bị chặn: về `/login`, đăng nhập lại | IP |
 | `registerLimiter` | `POST /register` | 10 lần / 1 giờ | IP |
 | `chatLimiter` | `POST /chat/send` | 10 câu / 1 phút | User |
 | `uploadLimiter` | `POST /owner/orders/:id/scans` | 10 lần / 10 phút | User |
@@ -385,7 +386,6 @@ Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mậ
 |---|---|
 | IP thật | Sau tunnel phải bật `TRUST_PROXY=true`, nếu không mọi người bị gộp thành một IP của cloudflared |
 | Bộ đếm | Lưu trong bộ nhớ, `rs` là reset |
-| Chưa có limiter | `POST /login/role` |
 | Đã test | Qua tunnel, điện thoại 4G bị chặn ở lần sai thứ 11; laptop (IP khác) vẫn đăng nhập được |
 
 ### CSRF (`lib/csrf.js`)
