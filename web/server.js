@@ -31,7 +31,6 @@ app.use(helmet({
     useDefaults: true,
     directives: {
       'script-src': ["'self'", (req, res) => `'nonce-${res.locals.cspNonce}'`],
-      'script-src-attr': ["'unsafe-inline'"],
       // Chỉ ép https khi chạy sau tunnel; trên http://localhost sẽ làm hỏng trang
       'upgrade-insecure-requests': config.behindProxy ? [] : null,
     },

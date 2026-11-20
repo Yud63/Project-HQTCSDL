@@ -20,7 +20,7 @@
 <% if (Number(u.UserId) === Number(selfId)) { %>Tài khoản của bạn<% } else { %>
 <form method="post" action="/admin/users/<%= u.UserId %>/status" style="display:inline"><%- include('../partials/csrf') %>
 <input type="hidden" name="isActive" value="<%= u.IsActive ? '0' : '1' %>">
-<button class="btn btn-sm btn-outline" type="submit" onclick="return confirm('Bạn chắc chắn muốn thay đổi trạng thái tài khoản này?')"><%= u.IsActive ? 'Khóa' : 'Mở khóa' %></button>
+<button class="btn btn-sm btn-outline" type="submit" data-confirm="Bạn chắc chắn muốn thay đổi trạng thái tài khoản này?"><%= u.IsActive ? 'Khóa' : 'Mở khóa' %></button>
 </form>
 <% } %>
 </td>

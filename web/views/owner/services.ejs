@@ -28,6 +28,6 @@
 <td><span class="badge <%= s.IsActive?'badge-success':'badge-warning' %>"><%= s.IsActive?'Đang bán':'Đã ẩn' %></span></td>
 <td><a class="btn btn-sm btn-outline" href="/owner/labs/<%= lab.LabId %>/services?edit=<%= s.LabServiceId %>">Sửa</a>
 <form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/toggle"><%- include('../partials/csrf') %><button class="btn btn-sm btn-outline" type="submit"><%= s.IsActive?'Ẩn':'Bật' %></button></form>
-<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/delete" onsubmit="return confirm('Xóa mềm dịch vụ này?')"><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
+<form style="display:inline" method="post" action="/owner/labs/<%= lab.LabId %>/services/<%= s.LabServiceId %>/delete" data-confirm="Xóa mềm dịch vụ này?"><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
 </td></tr><% }) %></tbody></table></div><% } %>
 <%- include('../partials/footer') %>

@@ -301,7 +301,7 @@
 
     <!-- Nút Hủy đơn hàng (khi ở các giai đoạn đầu) -->
     <% if (order.StageId < 5) { %>
-      <button type="button" class="btn btn-danger" onclick="document.getElementById('cancelSection').style.display = 'block'; this.style.display = 'none';">
+      <button type="button" class="btn btn-danger" data-show="cancelSection" data-hide-self>
         Hủy đơn hàng
       </button>
     <% } %>
@@ -321,7 +321,7 @@
         <input type="text" id="cancelReasonInput" name="reason" class="form-control" placeholder="Ví dụ: Đổi kế hoạch chụp, gửi nhầm lab, thay đổi dịch vụ..." required>
       </div>
       <div style="display: flex; gap: 10px; justify-content: flex-end;">
-        <button type="button" class="btn btn-secondary" onclick="document.getElementById('cancelSection').style.display = 'none';">
+        <button type="button" class="btn btn-secondary" data-hide="cancelSection">
           Đóng
         </button>
         <button type="submit" class="btn btn-danger">
