@@ -54,6 +54,7 @@ GRANT EXECUTE ON lab.sp_SearchLabs               TO role_LabOwner;
 GRANT EXECUTE ON ord.sp_UpdateOrderStage         TO role_LabOwner;
 GRANT EXECUTE ON ord.sp_ReplyReview              TO role_LabOwner;
 GRANT EXECUTE ON arc.sp_UploadScan               TO role_LabOwner;
+GRANT EXECUTE ON arc.sp_SetScanQuality            TO role_LabOwner;
 GRANT EXECUTE ON arc.sp_MarkNotificationRead     TO role_LabOwner;
 GRANT EXECUTE ON mkt.sp_SearchListings           TO role_LabOwner;
 GRANT EXECUTE ON com.sp_AddComment               TO role_LabOwner;

@@ -5,10 +5,11 @@ const path = require('path');
 const crypto = require('crypto');
 const router = require('express').Router();
 const multer = require('multer');
-const { sql, queryAs } = require('../lib/db');
+const { sql, queryAs, callProc } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
 const { HttpError, mapDbError } = require('../lib/errors');
 const { uploadDir } = require('../lib/config');
+const { scoreScan } = require('../lib/gemini');
 
 const ownerOnly = requireRole('LabOwner');
 const scansDir = path.join(uploadDir, 'owner');
@@ -350,6 +351,20 @@ async function checkOwnOrder(req, res, next) {
   ownedLab(data, order.LabId);
   next();
 }
+
+// Chấm điểm nền: không chờ. Gemini lỗi thì chỉ ghi log, scan giữ nguyên NotChecked.
+async function scoreScanInBackground({ filePath, scanFileId, role, userId }) {
+  try {
+    const r = await scoreScan(filePath);
+    await callProc(role, userId, 'arc.sp_SetScanQuality', {
+      ScanFileId: { type: sql.UniqueIdentifier, value: scanFileId },
+      ActorUserId: int(userId),
+      QualityScore: { type: sql.Decimal(5, 2), value: r.score },
+    });
+  } catch (e) {
+    console.error('[scan-quality]', String(e.message || e).slice(0, 200));
+  }
+}
 router.post('/owner/orders/:id/scans', ownerOnly, uploadLimiter, uploadOne, checkOwnOrder, async (req, res) => {
   const id = positiveId(req.params.id);
   const file = req.file;
@@ -363,14 +378,15 @@ router.post('/owner/orders/:id/scans', ownerOnly, uploadLimiter, uploadOne, chec
     for await (const chunk of fs.createReadStream(file.path)) hash.update(chunk);
     const frame = req.body.frameNumber ? smallInt(req.body.frameNumber, 1, 32767, 'Số khung') : null;
     const itemId = optionalId(req.body.orderItemId);
-    await req.callProc('arc.sp_UploadScan', {
+    const up = await req.callProc('arc.sp_UploadScan', {
       OrderId: int(id), ActorUserId: int(req.session.user.id),
       FileName: text(file.originalname, 255), StorageUrl: `/owner/scans/${file.filename}`,
       ContentType: file.mimetype, FileSizeBytes: { type: sql.BigInt, value: file.size },
       FrameNumber: frame === null ? null : { type: sql.SmallInt, value: frame },
       OrderItemId: itemId === null ? null : int(itemId), ChecksumSha256: hash.digest('hex'),
     }, { NewScanFileId: sql.UniqueIdentifier });
-    req.flash('success', 'Đã tải ảnh scan và lưu metadata vào database.');
+    scoreScanInBackground({ filePath: file.path, scanFileId: up.output.NewScanFileId, role: req.session.user.role, userId: req.session.user.id });    
+    req.flash('success', 'Đã tải ảnh scan và lưu metadata vào database. Điểm chất lượng sẽ cập nhật sau ít giây.');
   } catch (e) {
     await fs.promises.unlink(file.path).catch(() => {});
     const mapped = e instanceof HttpError ? { status: e.status, message: e.message } : mapDbError(e);
