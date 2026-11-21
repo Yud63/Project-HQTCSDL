@@ -368,7 +368,7 @@ Trước khi gửi link cho người ngoài: dọn dữ liệu test, đổi mậ
 | Thành phần | Cấu hình |
 |---|---|
 | CSP | `useDefaults`; `script-src` gồm `'self'` và nonce mới cho mỗi request (`res.locals.cspNonce`), `<script>` inline trong view phải có `nonce` |
-| `script-src-attr` | `'unsafe-inline'` (cho `onclick` trong view hiện có) |
+| `script-src-attr` | `'none'` (mặc định của helmet): view không được dùng handler inline như `onclick`; dùng `data-*` và `public/js/ui.js` |
 | HSTS, `upgrade-insecure-requests` | Chỉ bật khi `TRUST_PROXY=true` (sau tunnel HTTPS); trên `http://localhost` bật sẽ làm hỏng trang |
 | Khác | `x-powered-by` tắt; header mặc định của helmet như `X-Frame-Options`, `nosniff`, `Referrer-Policy: no-referrer` |
 
