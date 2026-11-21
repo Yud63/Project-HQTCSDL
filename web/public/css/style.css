@@ -106,6 +106,9 @@ input:focus, select:focus, textarea:focus { outline: 2px solid var(--primary); o
 .chat-sources { margin-top: 6px; font-size: .8rem; color: var(--muted); }
 .chat-form { display: flex; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
 .chat-form input { flex: 1; }
+.chat-menu { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px; border-top: 1px solid var(--border); }
+.chat-chip { border-radius: 999px; padding: 6px 14px; font-size: 0.9rem; background: #fff; color: inherit; border: 1px solid var(--border); cursor: pointer; }
+.chat-chip:hover { border-color: currentColor; }
 
 
 /* ===== Alias biến cho view đơn hàng / thông báo ===== */

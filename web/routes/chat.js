@@ -32,9 +32,21 @@ function logMessage(req, sessionId, role, message, extra = {}) {
 }
 
 // Mỗi lần mở trang chat là một SessionId mới
-router.get('/chat', requireRole(...CHAT_ROLES), (req, res) => {
+router.get('/chat', requireRole(...CHAT_ROLES), async (req, res) => {
   req.session.chatSessionId = crypto.randomUUID();
-  res.render('chat', { title: 'Trợ lý AI', maxLen: MAX_QUESTION });
+  // Menu nút lấy từ DB; lỗi thì vẫn mở chat bình thường, chỉ không có nút tri thức
+  const groups = [];
+  try {
+    const m = await req.callProc('ai.sp_GetChatMenu', { UserId: req.session.user.id });
+    m.recordset.forEach((r) => {
+      let g = groups.find((x) => x.topic === r.Topic);
+      if (!g) { g = { topic: r.Topic, items: [] }; groups.push(g); }
+      g.items.push(r.Title);
+    });
+  } catch (e) {
+    console.error('[chat] Không lấy được menu:', e.message);
+  }
+  res.render('chat', { title: 'Trợ lý AI', maxLen: MAX_QUESTION, menu: groups });
 });
 
 router.post('/chat/send', requireRole(...CHAT_ROLES), chatLimiter, async (req, res) => {

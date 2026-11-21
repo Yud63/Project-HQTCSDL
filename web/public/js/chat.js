@@ -4,6 +4,40 @@
   var form = document.getElementById('chat-form');
   var input = document.getElementById('chat-input');
   var send = document.getElementById('chat-send');
+  var menuBox = document.getElementById('chat-menu');
+  var groups = [];
+  try { groups = JSON.parse(menuBox.getAttribute('data-menu') || '[]'); } catch (e) { groups = []; }
+
+  function btn(label, onClick) {
+    var b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'btn chat-chip';
+    b.textContent = label;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function showRoot() {
+    menuBox.textContent = '';
+    menuBox.appendChild(btn('Tra đơn của tôi', function () { ask('Đơn của tôi đến đâu rồi?'); }));
+    menuBox.appendChild(btn('Gợi ý lab', function () { ask('Gợi ý lab tốt nhất cho tôi'); }));
+    groups.forEach(function (g) {
+      menuBox.appendChild(btn(g.topic, function () { showGroup(g); }));
+    });
+  }
+
+  function showGroup(g) {
+    menuBox.textContent = '';
+    g.items.forEach(function (t) {
+      menuBox.appendChild(btn(t, function () { ask(t); }));
+    });
+    menuBox.appendChild(btn('← Quay lại', showRoot));
+  }
+
+  function ask(text) {
+    input.value = text;
+    form.requestSubmit();
+  }
 
   function add(text, cls) {
     var d = document.createElement('div');
@@ -14,6 +48,7 @@
     return d;
   }
 
+  showRoot();
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var text = input.value.trim();
@@ -60,6 +95,7 @@
         input.disabled = false;
         send.disabled = false;
         input.focus();
+        showRoot();
       });
   });
 })();
