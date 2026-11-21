@@ -1,7 +1,7 @@
 /* ============================================================
    File    : tests/20_support_test.sql
    Purpose : Kiểm tra 4 procedure bổ sung Đợt 8a-2 (lab.sp_GetReferenceData, lab.sp_ListLabsForApproval,
-             iam.sp_ListUsers, ai.sp_SearchKnowledge) và GRANT thật dưới role. Mong đợi 38 PASS.
+             iam.sp_ListUsers, ai.sp_SearchKnowledge) và GRANT thật dưới role. Mong đợi 42 PASS.
    Cách chạy (trong thư mục tests, KHÔNG dùng -b):
      sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -i 20_support_test.sql | find /c "PASS:"
    Ghi chú : procedure trả nhiều result set sẽ in bảng ra màn hình, bỏ qua phần đó.
@@ -292,6 +292,39 @@ IF EXISTS (SELECT 1 FROM @kn) AND NOT EXISTS (SELECT 1 FROM @kn WHERE MatchMode 
 ELSE PRINT N'FAIL: T38 MatchMode hợp lệ';
 DECLARE @mode NVARCHAR(10) = (SELECT TOP 1 MatchMode FROM @kn);
 PRINT N'INFO: chế độ tìm kiếm hiện tại = ' + ISNULL(@mode, N'NULL');
+
+-- ===== ai.sp_GetChatMenu =====
+DECLARE @cmenu TABLE (KnowledgeDocId INT, Topic NVARCHAR(50), Title NVARCHAR(200), ChunkIndex INT);
+
+SET @e = NULL;
+EXECUTE AS USER = N'u_cus';
+BEGIN TRY INSERT @cmenu EXEC ai.sp_GetChatMenu @UserId = @an; END TRY
+BEGIN CATCH SET @e = ERROR_NUMBER(); END CATCH
+REVERT;
+IF @e IS NULL AND EXISTS (SELECT 1 FROM @cmenu) PRINT N'PASS: T39 role_Customer gọi sp_GetChatMenu có dữ liệu';
+ELSE PRINT N'FAIL: T39 role_Customer gọi sp_GetChatMenu (lỗi ' + ISNULL(CAST(@e AS NVARCHAR(10)), N'không lỗi') + N')';
+
+IF (SELECT COUNT(*) FROM @cmenu) = (SELECT COUNT(*) FROM ai.KnowledgeDocs WHERE IsApproved = 1 AND IsDeleted = 0)
+   AND NOT EXISTS (SELECT 1 FROM @cmenu m JOIN ai.KnowledgeDocs d ON d.KnowledgeDocId = m.KnowledgeDocId
+                   WHERE d.IsApproved = 0 OR d.IsDeleted = 1)
+    PRINT N'PASS: T40 menu chỉ gồm chunk đã duyệt và chưa xóa, đủ số dòng';
+ELSE PRINT N'FAIL: T40 menu chỉ gồm chunk đã duyệt và chưa xóa';
+
+SET @e = NULL;
+EXECUTE AS USER = N'u_cus';
+BEGIN TRY EXEC ai.sp_GetChatMenu @UserId = -1; END TRY
+BEGIN CATCH SET @e = ERROR_NUMBER(); END CATCH
+REVERT;
+IF @e = 50801 PRINT N'PASS: T41 sp_GetChatMenu từ chối user không tồn tại (50801)';
+ELSE PRINT N'FAIL: T41 sp_GetChatMenu user không tồn tại (lỗi ' + ISNULL(CAST(@e AS NVARCHAR(10)), N'không lỗi') + N')';
+
+SET @e = NULL;
+EXECUTE AS USER = N'u_auth';
+BEGIN TRY EXEC ai.sp_GetChatMenu @UserId = @an; END TRY
+BEGIN CATCH SET @e = ERROR_NUMBER(); END CATCH
+REVERT;
+IF @e = 229 PRINT N'PASS: T42 role_Auth bị từ chối sp_GetChatMenu (229)';
+ELSE PRINT N'FAIL: T42 role_Auth bị từ chối sp_GetChatMenu (lỗi ' + ISNULL(CAST(@e AS NVARCHAR(10)), N'không lỗi') + N')';
 
 DROP USER u_auth;
 DROP USER u_cus;

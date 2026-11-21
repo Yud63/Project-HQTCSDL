@@ -423,3 +423,27 @@ BEGIN
     END CATCH
 END
 GO
+
+
+CREATE OR ALTER PROCEDURE ai.sp_GetChatMenu
+    @UserId INT
+WITH EXECUTE AS OWNER
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM iam.Users WHERE UserId = @UserId AND IsDeleted = 0 AND IsActive = 1)
+            THROW 50801, N'Người dùng không tồn tại hoặc đã bị khóa.', 1;
+
+        -- Chỉ trả chunk đã duyệt, dùng làm nút menu chatbot (Topic = nhóm, Title = câu hỏi)
+        SELECT d.KnowledgeDocId, d.Topic, d.Title, d.ChunkIndex
+        FROM ai.KnowledgeDocs d
+        WHERE d.IsApproved = 1 AND d.IsDeleted = 0
+        ORDER BY d.Topic, d.KnowledgeDocId;
+    END TRY
+    BEGIN CATCH
+        THROW;
+    END CATCH
+END
+GO
