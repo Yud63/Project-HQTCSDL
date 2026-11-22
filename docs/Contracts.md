@@ -157,7 +157,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 
 ## 8. Danh mục đối tượng T-SQL (kế hoạch)
 
-★ = procedure bắt buộc. Tổng: **61 procedure** (16 bắt buộc, 45 mở rộng), **16 function**, **28 trigger**, **14 view**, **2 sequence**.
+★ = procedure bắt buộc. Tổng: **61 procedure theo kế hoạch** (16 bắt buộc, 45 mở rộng) + **20 procedure bổ sung cho web** = **81 procedure**, **16 function**, **28 trigger**, **14 view**, **2 sequence**.
 
 ### `iam`: M1 Identity & Access (người phụ trách A)
 
@@ -170,6 +170,10 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `iam.sp_GetLoginInfo` | Backend lấy hash và role để xác thực đăng nhập (role_Auth) |
 | Procedure | `iam.sp_GetMyAddresses` | Khách xem danh sách địa chỉ của mình (SĐT hiện thật) |
 | Procedure | `iam.sp_ListUsers` | Admin xem danh sách người dùng, lọc role/trạng thái/từ khóa, có phân trang |
+| Procedure (web) | `iam.sp_SessionGet` | Session store: đọc session theo Sid từ iam.Sessions |
+| Procedure (web) | `iam.sp_SessionSet` | Session store: tạo hoặc cập nhật session (MERGE), dọn session hết hạn |
+| Procedure (web) | `iam.sp_SessionTouch` | Session store: gia hạn ExpiresAt của session |
+| Procedure (web) | `iam.sp_SessionDestroy` | Session store: xóa session khi đăng xuất |
 | Trigger | `iam.trg_Users_Audit` (trên `iam.Users`) | Ghi nhật ký thay đổi (loại PasswordHash) |
 
 ### `lab`: M2 Lab & Catalog (người phụ trách B)
@@ -202,6 +206,10 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `ord.sp_SetFeeConfig` | Admin cấu hình phí nền tảng, Marketplace, giao hàng |
 | Procedure | `ord.sp_GetMyOrders` | Danh sách đơn của khách hoặc của lab, có lọc stage và phân trang |
 | Procedure | `ord.sp_GetOrderDetail` | Chi tiết đơn: item, timeline stage, thanh toán, giao nhận |
+| Procedure (web) | `ord.sp_FindMyOrderByCode` | Tìm đơn của người dùng theo mã đơn |
+| Procedure (web) | `ord.sp_GetMyComplaints` | Đọc khiếu nại của người dùng |
+| Procedure (web) | `ord.sp_GetMyOrderReview` | Đọc đánh giá của người dùng cho một đơn |
+| Procedure (web) | `ord.sp_GetPublicLabReviews` | Đọc đánh giá công khai của một lab |
 | Function | `ord.fn_CalcOrderTotal` | Tính Subtotal, Total của đơn |
 | Function | `ord.fn_CalcPlatformFee` | Tính hoa hồng nền tảng hiệu lực |
 | Function | `ord.fn_NextStage` | Giai đoạn kế tiếp áp dụng cho đơn |
@@ -257,6 +265,8 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `arc.sp_MarkNotificationRead` | Đánh dấu đã đọc thông báo |
 | Procedure | `arc.sp_SaveAlbum` | Khách tạo/sửa/xóa mềm album trong Digital Film Archive |
 | Procedure | `arc.sp_SetAlbumPhoto` | Khách thêm/gỡ ảnh khỏi album |
+| Procedure (web) | `arc.sp_GetMyAlbums` | Đọc danh sách album của người dùng |
+| Procedure (web) | `arc.sp_GetAlbumPhotos` | Đọc ảnh trong một album |
 | Function | `arc.fn_GetPhotoMetadata` | Table-valued: đọc ExtraJson bằng OPENJSON |
 | Trigger | `arc.trg_ScanFiles_Notify` (trên `arc.ScanFiles`) | Thông báo ScanReady lần upload đầu của đơn |
 | Trigger | `arc.trg_ScanFiles_CheckOwner` (trên `arc.ScanFiles`) | OwnerUserId = Orders.CustomerId |
@@ -276,6 +286,13 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `mkt.sp_SendMessage` | Gửi tin nhắn mua bán |
 | Procedure | `mkt.sp_ModerateListing` | Admin gỡ tin vi phạm |
 | Procedure | `mkt.sp_RunMaintenance` | Đóng tin hết hạn, tự hoàn tất giao dịch quá 7 ngày |
+| Procedure (web) | `mkt.sp_GetCategories` | Đọc danh mục tin đăng cho form và bộ lọc chợ |
+| Procedure (web) | `mkt.sp_GetListingDetail` | Đọc chi tiết một tin đăng kèm ảnh |
+| Procedure (web) | `mkt.sp_GetMyListings` | Đọc các tin đăng của chính người bán |
+| Procedure (web) | `mkt.sp_GetMyMessages` | Đọc tin nhắn của người dùng trong chợ |
+| Procedure (web) | `mkt.sp_GetMyTransactions` | Đọc giao dịch chợ của người dùng (mua và bán) |
+| Procedure (web) | `mkt.sp_CloseListing` | Chủ tin đóng tin đang hiển thị (Active sang Closed) |
+| Procedure (web) | `mkt.sp_DeleteListing` | Chủ tin xóa mềm tin đã đóng, chưa có giao dịch |
 | Function | `mkt.fn_CalcMarketplaceFee` | Phí Marketplace hiệu lực |
 | Function | `mkt.fn_SellerRating` | Điểm trung bình người bán |
 | Function | `mkt.fn_SellerRatingCount` | Số lượt đánh giá người bán (công khai, chạy WITH EXECUTE AS OWNER) |
@@ -300,6 +317,7 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `com.sp_AcceptAnswer` | Chọn câu trả lời cho bài Question |
 | Procedure | `com.sp_CancelEventRegistration` | Hủy đăng ký, đẩy người hàng chờ lên |
 | Procedure | `com.sp_SaveEvent` | Expert/Chủ lab tạo và sửa workshop, photowalk |
+| Procedure (web) | `com.sp_GetMyEventRegistrations` | Đọc các sự kiện người dùng đã đăng ký |
 | Function | `com.fn_EventSeatsLeft` | Số chỗ còn lại của sự kiện |
 | Trigger | `com.trg_Articles_CheckAuthorRole` (trên `com.Articles`) | Loại bài vs role tác giả |
 | Trigger | `com.trg_ArticleComments_CheckLevel` (trên `com.ArticleComments`) | Chỉ 1 cấp trả lời |
@@ -318,6 +336,8 @@ Ví dụ: `50302` = module `ord`, sai trạng thái. Mọi procedure ghi dữ li
 | Procedure | `ai.sp_ApproveKnowledgeDoc` | Admin duyệt chunk tri thức |
 | Procedure | `ai.sp_PurgeOldLogs` | Dọn log chat quá 180 ngày |
 | Procedure | `ai.sp_SearchKnowledge` | Tìm chunk tri thức đã duyệt (Full-Text, fallback LIKE) cho chatbot RAG |
+| Procedure (web) | `ai.sp_GetChatMenu` | Lấy menu gợi ý cho trợ lý chat theo người dùng |
+| Procedure (web) | `ai.sp_RecordOrderedLab` | Ghi nhận việc đặt đơn tại một lab cho phần gợi ý AI |
 | Function | `ai.fn_LabScores` | Inline table-valued: điểm gợi ý lab |
 | Trigger | `ai.trg_KnowledgeDocs_Guard` (trên `ai.KnowledgeDocs`) | Chỉ Expert đóng góp, Admin duyệt |
 | View | `ai.vw_RecommendationMetrics` | CTR, tỷ lệ đặt đơn theo ModelVersion |
@@ -364,3 +384,4 @@ Danh sách đầy đủ 77 FK (kèm bảng cha/cột, bản số, tầng tạo) 
 | 1.13 | Rà soát | Nhóm | ai.sp_PurgeOldLogs thêm WITH EXECUTE AS OWNER (chữ ký, kết quả và lỗi 50803/50805 không đổi) và cấp EXECUTE cho role_System. Lý do: RLS của ai.AIChatLogs chỉ cho db_owner và role_Admin nên job hệ thống dưới role_System xóa 0 dòng mà không báo lỗi; chạy dưới quyền chủ sở hữu thì xóa đúng log quá hạn, không nới hàm RLS dùng chung. tests/17 thêm T23 (23 PASS). Số procedure không đổi (61) | ai |
 | 1.14 | Rà soát | Nhóm | Thêm BLOCK predicate (AFTER INSERT, AFTER UPDATE, BEFORE UPDATE, BEFORE DELETE) cho 5 bảng: arc.Albums (hàm mới sec.fn_AlbumWriteAccess: chỉ chủ album được ghi, album công khai chỉ cho người khác đọc), arc.ScanFiles (dùng sec.fn_ScanAccess), ai.UserPreferences, ai.AIChatLogs, ai.RecommendationLogs (dùng sec.fn_OwnerAccess). Tổng 8 policy, 8 FILTER, 20 BLOCK. ord.Orders, arc.Notifications, dlv.DeliveryRequests giữ FILTER vì procedure ghi hộ người khác (arc.sp_CreateNotification, dlv.sp_RequestDelivery). Chữ ký, kết quả và mã lỗi procedure không đổi (mọi procedure ghi đều đặt UserId session = người thực hiện trước khi ghi); vi phạm BLOCK báo lỗi 33504. Trên 3 bảng AI, BEFORE UPDATE/DELETE là lớp dự phòng vì FILTER cùng hàm đã ẩn dòng người khác. tests/17 thêm T24-T44 (44 PASS). Số procedure không đổi (61) | sec, arc, ai |
 | 1.15 | Rà soát | Nhóm | Việc 4D: thêm RLS cho 3 bảng. lab.LabApprovals (FILTER = chủ lab của dòng và Admin qua sec.fn_LabPrivateAccess; 4 BLOCK chỉ Admin qua sec.fn_LabApprovalWriteAccess), com.Articles (FILTER sec.fn_ArticleAccess: bài Published ai cũng thấy, tác giả thấy thêm Draft và Hidden của mình, Admin thấy tất cả; 4 BLOCK sec.fn_ArticleWriteAccess: tác giả hoặc Admin), mkt.MarketTransactions và mkt.Messages (hàm mới sec.fn_TwoPartyAccess: một trong hai bên hoặc Admin, dùng cho FILTER và BLOCK UPDATE/DELETE; BLOCK INSERT chỉ người mua hoặc người gửi qua sec.fn_OwnerAccess). Tổng 12 policy, 12 FILTER, 36 BLOCK; ord.Orders, arc.Notifications, dlv.DeliveryRequests giữ FILTER. lab.sp_GetMyLabs thêm sp_set_session_context UserId = @OwnerUserId (chữ ký và kết quả không đổi). mkt.fn_SellerRating thêm WITH EXECUTE AS OWNER và thêm mkt.fn_SellerRatingCount(@SellerId) INT WITH EXECUTE AS OWNER (function thứ 16, ngoài kế hoạch 15): uy tín người bán là thông tin công khai nên không bị RLS lọc theo người gọi; mkt.vw_SellerStats cột RatingCount dùng hàm này (tên và thứ tự cột không đổi), các cột doanh thu, phí, số giao dịch trở thành của người xem (Admin thấy tất cả). mkt.sp_UpdateMarketTransaction, mkt.sp_ResolveDispute, mkt.sp_RunMaintenance thêm WITH EXECUTE AS OWNER (chữ ký, kết quả, mã lỗi không đổi): việc chuyển tin sang Sold phải thấy giao dịch của mọi người mua; job role_System không có UserId nên nếu không có OWNER thì xử lý 0 dòng mà không báo lỗi; @ActorUserId do backend truyền được tin cậy. Hệ quả của FILTER com.Articles: sp_AddComment với bài Hidden/Draft của người khác trả 50701 thay vì 50702; sp_PublishArticle trùng Slug với bài Hidden của người khác lỗi do UX_Articles_Slug thay vì 50704; vw_ExpertContributions với người không phải Admin cho HiddenArticles của chuyên gia khác bằng 0; chưa có view hoặc procedure cho độc giả đọc bài. Vi phạm BLOCK báo lỗi 33504. tests/17 thêm T45-T75 (75 PASS); tests/15 danh mục function thêm mkt.fn_SellerRatingCount. Số procedure không đổi (61), function 16 | sec, lab, com, mkt |
+| 1.16 | Rà soát | Nhóm | Ghi nhận 20 procedure bổ sung trong lúc làm web, ngoài kế hoạch 61 (tổng thực tế 81, tests/15 đã cập nhật). iam: sp_SessionGet, sp_SessionSet, sp_SessionTouch, sp_SessionDestroy (session store trên bảng iam.Sessions). mkt: sp_GetCategories, sp_GetListingDetail, sp_GetMyListings, sp_GetMyMessages, sp_GetMyTransactions, sp_CloseListing(@ListingId,@SellerId): chủ tin chuyển Active sang Closed; sp_DeleteListing(@ListingId,@SellerId): chủ tin xóa mềm tin Closed chưa có giao dịch; lỗi 50601 không tồn tại, 50603 không phải chủ tin, 50602 sai trạng thái hoặc đã có giao dịch; GRANT role_Customer cho 2 procedure này. ord: sp_FindMyOrderByCode, sp_GetMyComplaints, sp_GetMyOrderReview, sp_GetPublicLabReviews. arc: sp_GetMyAlbums, sp_GetAlbumPhotos. com: sp_GetMyEventRegistrations. ai: sp_GetChatMenu, sp_RecordOrderedLab. Danh mục kế hoạch (PROCS) giữ 61, 20 procedure này nằm ở WEB_PROCS trong tools/plan_spec.py | iam, mkt, ord, arc, com, ai |

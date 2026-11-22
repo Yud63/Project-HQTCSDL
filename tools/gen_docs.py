@@ -30,6 +30,8 @@ assert sorted(all_listed) == sorted(by.keys()), "UNITS không khớp danh sách 
 assert len(P.PROCS) == 61 and sum(1 for p in P.PROCS if p[2]) == 16, "Phải có 61 procedure, 16 bắt buộc"
 assert len(P.FUNCS) == 16 and len(P.TRIGGERS) == 28 and len(P.VIEWS) == 14
 assert sum(u[4] for u in P.UNITS) == 114, "Tổng business rule phải là 114"
+assert len(P.WEB_PROCS) == 20 and {p[0] for p in P.WEB_PROCS} <= {u[0] for u in P.UNITS}, "Phải có 20 procedure bổ sung cho web, đúng unit"
+assert not ({(p[0], p[1]) for p in P.PROCS} & {(p[0], p[1]) for p in P.WEB_PROCS}), "WEB_PROCS trùng với PROCS"
 star_names = {p[1] for p in P.PROCS if p[2]}
 sig_names = {s[0].split(".")[1] for s in P.STAR_SIGNATURES}
 assert star_names == sig_names, "Chữ ký ★ không khớp danh sách ★: %s" % (star_names ^ sig_names)
@@ -128,11 +130,12 @@ for i, (n, prm, res, err, calls) in enumerate(P.STAR_SIGNATURES, start=1):
 c.append("")
 
 c.append("## 8. Danh mục đối tượng T-SQL (kế hoạch)\n")
-c.append("★ = procedure bắt buộc. Tổng: **%d procedure** (16 bắt buộc, %d mở rộng), **%d function**, **%d trigger**, **%d view**, **%d sequence**.\n" % (
-    len(P.PROCS), len(P.PROCS) - 16, len(P.FUNCS), len(P.TRIGGERS), len(P.VIEWS), len(P.SEQUENCES)))
+c.append("★ = procedure bắt buộc. Tổng: **%d procedure theo kế hoạch** (16 bắt buộc, %d mở rộng) + **%d procedure bổ sung cho web** = **%d procedure**, **%d function**, **%d trigger**, **%d view**, **%d sequence**.\n" % (
+    len(P.PROCS), len(P.PROCS) - 16, len(P.WEB_PROCS), len(P.PROCS) + len(P.WEB_PROCS), len(P.FUNCS), len(P.TRIGGERS), len(P.VIEWS), len(P.SEQUENCES)))
 for u in P.UNITS:
     uid, sch = u[0], u[1]
     procs = [p for p in P.PROCS if p[0] == uid]
+    webprocs = [p for p in P.WEB_PROCS if p[0] == uid]
     funcs = [f for f in P.FUNCS if f[0] == uid]
     trgs = [t for t in P.TRIGGERS if t[0] == uid]
     vws = [v for v in P.VIEWS if v[0] == uid]
@@ -140,6 +143,7 @@ for u in P.UNITS:
     c.append("### `%s`: %s (người phụ trách %s)\n" % (uid, u[3], owner_of[uid]))
     c.append("| Loại | Tên | Mục đích |\n|---|---|---|")
     for p in procs: c.append("| Procedure%s | `%s.%s` | %s |" % (" ★" if p[2] else "", sch, p[1], p[3]))
+    for p in webprocs: c.append("| Procedure (web) | `%s.%s` | %s |" % (sch, p[1], p[3]))
     for f in funcs: c.append("| Function | `%s.%s` | %s |" % (sch, f[1], f[2]))
     for t in trgs: c.append("| Trigger | `%s.%s` (trên `%s`) | %s |" % (sch, t[1], t[2], t[3]))
     for v in vws: c.append("| View | `%s.%s` | %s |" % (sch, v[1], v[2]))

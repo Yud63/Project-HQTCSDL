@@ -80,6 +80,30 @@ PROCS = [
  ("ai","sp_SearchKnowledge",False,"Tìm chunk tri thức đã duyệt (Full-Text, fallback LIKE) cho chatbot RAG"),
 ]
 
+# Procedure bổ sung trong lúc làm web, ngoài kế hoạch 61 (unit, tên, bắt buộc?, mục đích)
+WEB_PROCS = [
+ ("iam","sp_SessionGet",False,"Session store: đọc session theo Sid từ iam.Sessions"),
+ ("iam","sp_SessionSet",False,"Session store: tạo hoặc cập nhật session (MERGE), dọn session hết hạn"),
+ ("iam","sp_SessionTouch",False,"Session store: gia hạn ExpiresAt của session"),
+ ("iam","sp_SessionDestroy",False,"Session store: xóa session khi đăng xuất"),
+ ("mkt","sp_GetCategories",False,"Đọc danh mục tin đăng cho form và bộ lọc chợ"),
+ ("mkt","sp_GetListingDetail",False,"Đọc chi tiết một tin đăng kèm ảnh"),
+ ("mkt","sp_GetMyListings",False,"Đọc các tin đăng của chính người bán"),
+ ("mkt","sp_GetMyMessages",False,"Đọc tin nhắn của người dùng trong chợ"),
+ ("mkt","sp_GetMyTransactions",False,"Đọc giao dịch chợ của người dùng (mua và bán)"),
+ ("mkt","sp_CloseListing",False,"Chủ tin đóng tin đang hiển thị (Active sang Closed)"),
+ ("mkt","sp_DeleteListing",False,"Chủ tin xóa mềm tin đã đóng, chưa có giao dịch"),
+ ("ord","sp_FindMyOrderByCode",False,"Tìm đơn của người dùng theo mã đơn"),
+ ("ord","sp_GetMyComplaints",False,"Đọc khiếu nại của người dùng"),
+ ("ord","sp_GetMyOrderReview",False,"Đọc đánh giá của người dùng cho một đơn"),
+ ("ord","sp_GetPublicLabReviews",False,"Đọc đánh giá công khai của một lab"),
+ ("arc","sp_GetMyAlbums",False,"Đọc danh sách album của người dùng"),
+ ("arc","sp_GetAlbumPhotos",False,"Đọc ảnh trong một album"),
+ ("com","sp_GetMyEventRegistrations",False,"Đọc các sự kiện người dùng đã đăng ký"),
+ ("ai","sp_GetChatMenu",False,"Lấy menu gợi ý cho trợ lý chat theo người dùng"),
+ ("ai","sp_RecordOrderedLab",False,"Ghi nhận việc đặt đơn tại một lab cho phần gợi ý AI"),
+]
+
 # (unit, tên, mục đích)
 FUNCS = [
  ("lab","fn_LabCapacityLeft","Số cuộn còn nhận được trong ngày của lab"),

@@ -54,7 +54,7 @@ DB đã dựng từ trước khi có session store phải bổ sung bảng `iam.
 |---|---|
 | Bảng | 41 |
 | Khóa ngoại | 77 |
-| Procedure | 61 (16 procedure bắt buộc) |
+| Procedure | 81 (61 theo kế hoạch, trong đó 16 bắt buộc; 20 bổ sung cho web) |
 | Function | 16 |
 | Trigger | 28 |
 | View | 14 |
