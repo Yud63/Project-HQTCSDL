@@ -136,8 +136,7 @@ router.post('/recommend/action', async (req, res, next) => {
           !Number.isSafeInteger(Number(labId))) {
         return res.status(400).send('Mã Lab không hợp lệ.');
       }
-      req.flash('success', 'Đã ghi nhận lượt xem Lab thành công.');
-      return res.redirect('/recommend');
+      return res.redirect('/labs/' + Number(labId) + '?rec=' + recLogId);
     }
 
     req.flash('success', 'Đã ghi nhận thao tác Bỏ qua thành công.');
