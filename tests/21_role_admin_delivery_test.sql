@@ -129,7 +129,7 @@ DECLARE @snap0 NVARCHAR(200), @snap1 NVARCHAR(200);
 
 SET @adm = (SELECT UserId FROM iam.Users WHERE Email = N'admin@filmlab.vn');
 SET @lab = (SELECT TOP 1 LabId FROM lab.FilmLabs WHERE ApprovalStatus = N'Pending' AND IsDeleted = 0 ORDER BY LabId);
-SET @usr = (SELECT UserId FROM iam.Users WHERE Email = N'khach.minh@example.com');
+SET @usr = (SELECT UserId FROM iam.Users WHERE Email = N'an.nguyen@example.com');
 SET @doc = (SELECT TOP 1 KnowledgeDocId FROM ai.KnowledgeDocs WHERE IsApproved = 0 AND IsDeleted = 0 ORDER BY KnowledgeDocId);
 
 -- Ảnh chụp dữ liệu trước khi gọi (dùng cho T23)
@@ -141,25 +141,30 @@ SET @snap0 = CONCAT((SELECT COUNT(*) FROM ord.Orders), N'|',
                     (SELECT COUNT(*) FROM iam.Users WHERE IsActive = 1), N'|',
                     (SELECT COUNT(*) FROM audit.AuditLogs));
 
--- T16: Admin gọi lab.sp_ApproveLab (ghi lab, LabApprovals, trigger audit/notification)
+-- T16: Admin gọi lab.sp_ApproveLab (tự tạo 1 lab Pending bằng sp_SaveLabProfile trong transaction, không phụ thuộc dữ liệu seed)
+DECLARE @own16 INT = (SELECT UserId FROM iam.Users WHERE Email = N'lab.saigon@filmlab.vn');
+DECLARE @new16 INT;
 SET @err = 0; SET @msg = NULL; SET @st = NULL;
-EXECUTE AS USER = N'u_adm21';
 BEGIN TRY
     BEGIN TRAN;
-    EXEC lab.sp_ApproveLab @LabId = @lab, @AdminUserId = @adm, @Decision = N'Approved';
+    EXEC lab.sp_SaveLabProfile @OwnerUserId = @own16, @LabName = N'Lab test T16', @AddressLine = N'1 Test',
+                               @Ward = N'P1', @District = N'Q1', @City = N'TP.HCM', @NewLabId = @new16 OUT;
+    EXECUTE AS USER = N'u_adm21';
+    EXEC lab.sp_ApproveLab @LabId = @new16, @AdminUserId = @adm, @Decision = N'Approved';
     REVERT;
-    SET @st = (SELECT ApprovalStatus FROM lab.FilmLabs WHERE LabId = @lab);
+    SET @st = (SELECT ApprovalStatus FROM lab.FilmLabs WHERE LabId = @new16);
     ROLLBACK;
 END TRY
 BEGIN CATCH
     SET @err = ERROR_NUMBER(); SET @msg = ERROR_MESSAGE();
+    IF USER_NAME() <> N'dbo' REVERT;
     IF @@TRANCOUNT > 0 ROLLBACK;
 END CATCH
 IF USER_NAME() <> N'dbo' REVERT;
 IF @err = 0 AND @st = N'Approved' PRINT N'PASS: T16 Admin gọi lab.sp_ApproveLab chạy được (Pending sang Approved, đã ROLLBACK)';
 ELSE PRINT N'FAIL: T16 Admin gọi lab.sp_ApproveLab, lỗi ' + CAST(@err AS NVARCHAR(10)) + N': ' + ISNULL(@msg, N'trạng thái = ' + ISNULL(@st, N'NULL'));
 
--- T17: Admin gọi iam.sp_SetUserStatus (khóa khach.minh)
+-- T17: Admin gọi iam.sp_SetUserStatus (khóa an.nguyen)
 SET @err = 0; SET @msg = NULL; SET @st = NULL;
 EXECUTE AS USER = N'u_adm21';
 BEGIN TRY

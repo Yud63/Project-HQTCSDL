@@ -10,7 +10,7 @@ CREATE TABLE #exp (SchemaName SYSNAME COLLATE DATABASE_DEFAULT,
                    Kind       CHAR(1) COLLATE DATABASE_DEFAULT);
 INSERT #exp VALUES
 
- -- Procedure (61)
+  -- Procedure (81 = 61 theo kế hoạch + 20 bổ sung cho web)
  (N'iam',N'sp_RegisterUser','P'),
  (N'lab',N'sp_ApproveLab','P'),(N'lab',N'sp_SearchLabs','P'),(N'lab',N'sp_RecalcLabRating','P'),
  (N'ord',N'sp_CreateOrder','P'),(N'ord',N'sp_UpdateOrderStage','P'),(N'ord',N'sp_CancelOrder','P'),(N'ord',N'sp_ProcessPayment','P'),
@@ -31,6 +31,14 @@ INSERT #exp VALUES
  (N'lab',N'sp_GetLabDetail','P'),(N'lab',N'sp_GetMyLabs','P'),
  (N'ord',N'sp_GetMyOrders','P'),(N'ord',N'sp_GetOrderDetail','P'),
  (N'lab',N'sp_GetReferenceData','P'),(N'lab',N'sp_ListLabsForApproval','P'),(N'iam',N'sp_ListUsers','P'),(N'ai',N'sp_SearchKnowledge','P'),
+  -- Procedure bổ sung cho web (20)
+ (N'ai',N'sp_GetChatMenu','P'),(N'ai',N'sp_RecordOrderedLab','P'),
+ (N'arc',N'sp_GetMyAlbums','P'),(N'arc',N'sp_GetAlbumPhotos','P'),
+ (N'com',N'sp_GetMyEventRegistrations','P'),
+ (N'iam',N'sp_SessionGet','P'),(N'iam',N'sp_SessionSet','P'),(N'iam',N'sp_SessionTouch','P'),(N'iam',N'sp_SessionDestroy','P'),
+ (N'mkt',N'sp_CloseListing','P'),(N'mkt',N'sp_DeleteListing','P'),(N'mkt',N'sp_GetCategories','P'),(N'mkt',N'sp_GetListingDetail','P'),
+ (N'mkt',N'sp_GetMyListings','P'),(N'mkt',N'sp_GetMyMessages','P'),(N'mkt',N'sp_GetMyTransactions','P'),
+ (N'ord',N'sp_FindMyOrderByCode','P'),(N'ord',N'sp_GetMyComplaints','P'),(N'ord',N'sp_GetMyOrderReview','P'),(N'ord',N'sp_GetPublicLabReviews','P'),
  -- Function (14 + 2)
  (N'lab',N'fn_LabCapacityLeft','F'),(N'lab',N'fn_DistanceKm','F'),
  (N'ord',N'fn_CalcOrderTotal','F'),(N'ord',N'fn_CalcPlatformFee','F'),(N'ord',N'fn_NextStage','F'),(N'ord',N'fn_IsValidTransition','F'),(N'ord',N'fn_CalcDeliveryFee','F'),(N'ord',N'fn_LabAvgRating','F'),
