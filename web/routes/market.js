@@ -3,6 +3,10 @@ const express = require('express');
 const router = express.Router();
 const { requireLogin, requireRole } = require('../lib/auth');
 const { sql } = require('../lib/db');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const multer = require('multer');
 
 router.use('/market', requireLogin, requireRole('Customer'));
 
@@ -13,7 +17,6 @@ const errNumber = (e) => e && (e.number ?? (e.originalError && e.originalError.n
 const PAGE_SIZE = 12;
 const SORTS = ['Newest', 'PriceAsc', 'PriceDesc'];
 const TYPES = ['Sell', 'Exchange', 'Wanted'];
-
 const str = (v) => { const s = String(v || '').trim(); return s ? s : null; };
 const posInt = (v) => { const n = parseInt(v, 10); return Number.isInteger(n) && n > 0 ? n : null; };
 const price = (v) => { const n = Number(String(v || '').trim()); return String(v || '').trim() !== '' && Number.isFinite(n) && n >= 0 ? n : null; };
@@ -87,6 +90,40 @@ function parseImages(raw) {
   return { json: JSON.stringify(urls.map((url, i) => ({ url, isPrimary: i === 0 }))) };
 }
 
+// ---------- Upload ảnh tin chợ: ảnh công khai nên lưu trong public ----------
+const marketImgDir = path.join(__dirname, '..', 'public', 'img', 'market');
+const IMG_EXT = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp' };
+const IMG_SIG = {
+  'image/jpeg': (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff,
+  'image/png': (b) => b.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex')),
+  'image/webp': (b) => b.subarray(0, 4).toString('ascii') === 'RIFF' && b.subarray(8, 12).toString('ascii') === 'WEBP',
+};
+const marketUpload = multer({
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => fs.mkdir(marketImgDir, { recursive: true }, (err) => cb(err, marketImgDir)),
+    filename: (req, file, cb) => cb(null, crypto.randomUUID() + IMG_EXT[file.mimetype]),
+  }),
+  limits: { fileSize: 2 * 1024 * 1024, files: 4 },
+  fileFilter: (req, file, cb) => (IMG_EXT[file.mimetype] ? cb(null, true) : cb(new Error('BAD_TYPE'))),
+});
+function uploadImages(req, res, next) {
+  marketUpload.array('photos', 4)(req, res, (err) => {
+    req.uploadError = null;
+    if (err) {
+      req.uploadError = err.message === 'BAD_TYPE'
+        ? 'Chỉ nhận ảnh JPEG, PNG hoặc WebP.'
+        : 'Ảnh quá lớn (tối đa 2 MB mỗi ảnh, tối đa 4 ảnh) hoặc tải lên không hợp lệ.';
+    }
+    next();
+  });
+}
+function hasValidSignature(f) {
+  const buf = Buffer.alloc(12);
+  const fd = fs.openSync(f.path, 'r');
+  try { fs.readSync(fd, buf, 0, 12, 0); } finally { fs.closeSync(fd); }
+  return IMG_SIG[f.mimetype](buf);
+}
+
 router.get('/market/new', async (req, res, next) => {
   try {
     const categories = (await req.callProc('mkt.sp_GetCategories')).recordset;
@@ -94,15 +131,22 @@ router.get('/market/new', async (req, res, next) => {
   } catch (e) { next(e); }
 });
 
-router.post('/market/new', async (req, res, next) => {
+router.post('/market/new', uploadImages, async (req, res, next) => {
   try {
     const u = req.session.user;
     const b = req.body || {};
     const categories = (await req.callProc('mkt.sp_GetCategories')).recordset;
-    const renderErr = (msg) => res.status(400).render('market/new', { title: 'Đăng tin', categories, form: b, error: msg });
+    const renderErr = (msg) => {
+      (req.files || []).forEach((f) => fs.unlink(f.path, () => {}));
+      return res.status(400).render('market/new', { title: 'Đăng tin', categories, form: b, error: msg });
+    };
 
-    const imgs = parseImages(b.images);
-    if (imgs.error) return renderErr(imgs.error);
+    if (req.uploadError) return renderErr(req.uploadError);
+      const files = req.files || [];
+      if (files.some((f) => !hasValidSignature(f))) return renderErr('File tải lên không phải ảnh hợp lệ.');
+      const uploaded = files.map((f) => '/img/market/' + f.filename);
+      const imgs = parseImages(uploaded.concat(String(b.images || '').split(/\r?\n/)).join('\n'));
+     if (imgs.error) return renderErr(imgs.error);
 
     const qtyRaw = String(b.quantity || '').trim();
     const qty = qtyRaw === '' ? 1 : parseInt(qtyRaw, 10);
@@ -130,6 +174,26 @@ router.post('/market/new', async (req, res, next) => {
     req.flash('success', 'Đã đăng tin.');
     return res.redirect('/market/mine');
   } catch (e) { return next(e); }
+});
+
+router.post('/market/:id/close', async (req, res, next) => {
+  try {
+    const id = posInt(req.params.id);
+    if (!id) { req.flash('danger', 'Tin không hợp lệ.'); return res.redirect('/market/mine'); }
+    await req.callProc('mkt.sp_CloseListing', { ListingId: id, SellerId: req.session.user.id });
+    req.flash('success', 'Đã đóng tin.');
+    return res.redirect('/market/mine');
+  } catch (e) { return fail(req, res, e, next, '/market/mine'); }
+});
+
+router.post('/market/:id/delete', async (req, res, next) => {
+  try {
+    const id = posInt(req.params.id);
+    if (!id) { req.flash('danger', 'Tin không hợp lệ.'); return res.redirect('/market/mine'); }
+    await req.callProc('mkt.sp_DeleteListing', { ListingId: id, SellerId: req.session.user.id });
+    req.flash('success', 'Đã xóa tin.');
+    return res.redirect('/market/mine');
+  } catch (e) { return fail(req, res, e, next, '/market/mine'); }
 });
 
 router.get('/market/mine', async (req, res, next) => {

@@ -1,8 +1,8 @@
-<%- include('../partials/header') %>
+﻿<%- include('../partials/header') %>
 <h1>Tin của tôi</h1>
 <%- include('_nav') %>
 <% if (!listings.length) { %><div class="card empty">Bạn chưa đăng tin nào.</div><% } else { %>
-<div class="table-wrap"><table class="table"><thead><tr><th>Loại</th><th>Tiêu đề</th><th>Danh mục</th><th class="num">Giá</th><th class="num">SL</th><th>Trạng thái</th><th>Hết hạn</th></tr></thead><tbody>
+<div class="table-wrap"><table class="table"><thead><tr><th>Loại</th><th>Tiêu đề</th><th>Danh mục</th><th class="num">Giá</th><th class="num">SL</th><th>Trạng thái</th><th>Hết hạn</th><th></th></tr></thead><tbody>
 <% listings.forEach(function(l){
      var typeLabel = l.ListingType === 'Sell' ? 'Bán' : (l.ListingType === 'Exchange' ? 'Trao đổi' : 'Cần mua'); %>
 <tr>
@@ -13,6 +13,13 @@
 <td class="num"><%= l.Quantity %></td>
 <td><span class="badge <%= l.Status === 'Active' ? 'badge-success' : '' %>"><%= l.Status %></span></td>
 <td><%= new Date(l.ExpiresAt).toLocaleDateString('vi-VN') %></td>
+<td>
+<% if (l.Status === 'Active') { %>
+<form style="display:inline" method="post" action="/market/<%= l.ListingId %>/close" data-confirm="Đóng tin này? Tin sẽ không còn hiển thị ở Chợ."><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit">Đóng tin</button></form>
+<% } else if (l.Status === 'Closed') { %>
+<form style="display:inline" method="post" action="/market/<%= l.ListingId %>/delete" data-confirm="Xóa tin này khỏi danh sách của bạn?"><%- include('../partials/csrf') %><button class="btn btn-sm btn-danger" type="submit">Xóa</button></form>
+<% } %>
+</td>
 </tr><% }) %></tbody></table></div>
 <% } %>
 <%- include('../partials/footer') %>
