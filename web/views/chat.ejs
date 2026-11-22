@@ -6,7 +6,7 @@
   <div id="chat-log" class="chat-log" aria-live="polite">
     <div class="chat-msg chat-bot">Xin chào! Bạn muốn hỏi gì về nhiếp ảnh phim?</div>
   </div>
-    <div id="chat-menu" class="chat-menu" data-menu="<%= JSON.stringify(menu) %>"></div>
+    <div id="chat-menu" class="chat-menu" data-menu="<%= JSON.stringify(chatMenu) %>"></div>
   <form id="chat-form" class="chat-form" autocomplete="off">
     <input type="text" id="chat-input" name="message" maxlength="<%= maxLen %>" placeholder="Nhập câu hỏi (tối đa <%= maxLen %> ký tự)" required>
     <button class="btn" type="submit" id="chat-send">Gửi</button>

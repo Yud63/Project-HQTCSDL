@@ -46,7 +46,7 @@ router.get('/chat', requireRole(...CHAT_ROLES), async (req, res) => {
   } catch (e) {
     console.error('[chat] Không lấy được menu:', e.message);
   }
-  res.render('chat', { title: 'Trợ lý AI', maxLen: MAX_QUESTION, menu: groups });
+  res.render('chat', { title: 'Trợ lý AI', maxLen: MAX_QUESTION, chatMenu: groups });
 });
 
 router.post('/chat/send', requireRole(...CHAT_ROLES), chatLimiter, async (req, res) => {
