@@ -1,12 +1,41 @@
 <%- include('partials/header') %>
 <h1>Xin chào, <%= currentUser.name %></h1>
 <p class="muted">Vai trò đang dùng: <strong><%= currentUser.role %></strong></p>
-<% if (menu.length) { %>
-  <div class="grid">
-    <% menu.forEach(function (item) { %>
-      <a class="card card-link" href="<%= item.href %>"><%= item.label %></a>
-    <% }) %>
+
+<% if (currentUser.role === 'Customer') { %>
+  <div class="card home-search">
+    <p class="home-search-title">Tìm lab nhanh</p>
+    <form method="get" action="/labs" class="home-search-form">
+      <input type="text" name="Technique" maxlength="50" placeholder="Kỹ thuật xử lý, ví dụ: push, cross" aria-label="Kỹ thuật xử lý">
+      <button class="btn" type="submit">Tìm lab</button>
+    </form>
+    <p class="home-shortcuts">
+      <a href="/labs?MaxTurnaroundDays=3">Giao trong 3 ngày</a>
+      <a href="/labs?MinRating=4">Đánh giá từ 4 sao</a>
+    </p>
   </div>
+<% } %>
+
+<%
+  var groups = [], byName = {};
+  menu.forEach(function (item) {
+    var g = item.group || 'Khác';
+    if (!byName[g]) { byName[g] = { name: g, items: [] }; groups.push(byName[g]); }
+    byName[g].items.push(item);
+  });
+%>
+<% if (groups.length) { %>
+  <% groups.forEach(function (g) { %>
+    <h2 class="home-group"><%= g.name %></h2>
+    <div class="grid">
+      <% g.items.forEach(function (item) { %>
+        <a class="card card-link" href="<%= item.href %>">
+          <%= item.label %>
+          <% if (item.desc) { %><span class="card-desc"><%= item.desc %></span><% } %>
+        </a>
+      <% }) %>
+    </div>
+  <% }) %>
 <% } else { %>
   <div class="empty"><p>Vai trò này chưa có màn hình nào.</p></div>
 <% } %>

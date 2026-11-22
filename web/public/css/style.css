@@ -237,3 +237,13 @@ main.container { padding-bottom: 32px; }
 /* Checkbox trong form: nằm cùng hàng với chữ */
 .form label.check { flex-direction: row; align-items: center; gap: 8px; font-weight: 400; }
 .form label.check input { width: auto; margin: 0; }
+
+
+/* Trang chủ: nhóm thẻ, mô tả, ô tìm lab nhanh */
+.home-group { margin-top: 1.4rem; color: var(--muted); font-size: .9rem; text-transform: uppercase; letter-spacing: .04em; }
+.card-link .card-desc { display: block; margin-top: 4px; font-weight: 400; font-size: .85rem; color: var(--muted); }
+.home-search { margin: 16px 0; max-width: 640px; }
+.home-search-title { margin: 0 0 8px; font-weight: 600; }
+.home-search-form { display: flex; gap: 8px; flex-wrap: wrap; }
+.home-search-form input { flex: 1 1 240px; }
+.home-shortcuts { display: flex; gap: 16px; flex-wrap: wrap; margin: 10px 0 0; font-size: .9rem; }
