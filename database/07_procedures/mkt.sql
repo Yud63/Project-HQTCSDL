@@ -723,3 +723,84 @@ BEGIN
     ORDER BY m.ListingId, PartnerId, m.SentAt, m.MessageId;
 END
 GO
+
+
+CREATE OR ALTER PROCEDURE mkt.sp_CloseListing
+    @ListingId INT,
+    @SellerId  INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @SellerId;
+
+        BEGIN TRAN;
+
+        DECLARE @Owner INT, @Status NVARCHAR(8);
+        SELECT @Owner = SellerId, @Status = Status
+        FROM mkt.Listings WITH (UPDLOCK, HOLDLOCK)
+        WHERE ListingId = @ListingId AND IsDeleted = 0;
+
+        IF @Owner IS NULL
+            THROW 50601, N'Tin đăng không tồn tại.', 1;
+        IF @Owner <> @SellerId
+            THROW 50603, N'Chỉ người đăng mới được đóng tin.', 1;
+        IF @Status <> N'Active'
+            THROW 50602, N'Chỉ đóng được tin đang hiển thị (Active).', 1;
+
+        UPDATE mkt.Listings
+        SET Status = N'Closed', UpdatedAt = SYSUTCDATETIME()
+        WHERE ListingId = @ListingId;
+
+        IF @@ROWCOUNT = 0
+            THROW 50603, N'Không có quyền đóng tin này.', 1;
+
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO
+
+CREATE OR ALTER PROCEDURE mkt.sp_DeleteListing
+    @ListingId INT,
+    @SellerId  INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    BEGIN TRY
+        EXEC sp_set_session_context @key = N'UserId', @value = @SellerId;
+        BEGIN TRAN;
+
+        DECLARE @Owner INT, @Status NVARCHAR(8);
+        SELECT @Owner = SellerId, @Status = Status
+        FROM mkt.Listings WITH (UPDLOCK, HOLDLOCK)
+        WHERE ListingId = @ListingId AND IsDeleted = 0;
+
+        IF @Owner IS NULL
+            THROW 50601, N'Tin đăng không tồn tại.', 1;
+        IF @Owner <> @SellerId
+            THROW 50603, N'Chỉ người đăng mới được xóa tin.', 1;
+        IF @Status <> N'Closed'
+            THROW 50602, N'Chỉ xóa được tin đã đóng (Closed).', 1;
+        IF EXISTS (SELECT 1 FROM mkt.MarketTransactions WHERE ListingId = @ListingId)
+            THROW 50602, N'Tin đã có giao dịch, không thể xóa.', 1;
+
+        UPDATE mkt.Listings
+        SET IsDeleted = 1, UpdatedAt = SYSUTCDATETIME()
+        WHERE ListingId = @ListingId;
+
+        IF @@ROWCOUNT = 0
+            THROW 50603, N'Không có quyền xóa tin này.', 1;
+        COMMIT;
+    END TRY
+    BEGIN CATCH
+        IF @@TRANCOUNT > 0 ROLLBACK;
+        THROW;
+    END CATCH
+END
+GO

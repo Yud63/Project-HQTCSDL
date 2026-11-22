@@ -33,6 +33,8 @@ GRANT EXECUTE ON mkt.sp_GetMyTransactions       TO role_Customer;
 GRANT EXECUTE ON mkt.sp_GetMyListings           TO role_Customer;
 GRANT EXECUTE ON mkt.sp_GetMyMessages           TO role_Customer;
 GRANT EXECUTE ON mkt.sp_SendMessage              TO role_Customer;
+GRANT EXECUTE ON mkt.sp_CloseListing             TO role_Customer;
+GRANT EXECUTE ON mkt.sp_DeleteListing            TO role_Customer;
 GRANT EXECUTE ON com.sp_PublishArticle           TO role_Customer;
 GRANT EXECUTE ON com.sp_AddComment               TO role_Customer;
 GRANT EXECUTE ON com.sp_AcceptAnswer             TO role_Customer;
