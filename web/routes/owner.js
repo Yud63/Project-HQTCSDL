@@ -298,7 +298,20 @@ router.get('/owner/orders/:id', ownerOnly, async (req, res) => {
     payments: r.recordsets[3] || [], deliveries: r.recordsets[4] || [],
   };
   const reference = await refs(req);
-  return res.render('owner/order-detail', { title: 'Đơn ' + detail.order.OrderCode, ...detail, stages: reference.stages });
+  // Ảnh scan của đơn (kèm điểm chất lượng AI): SELECT qua GRANT + RLS, lỗi thì chỉ ẩn bảng, không làm hỏng trang
+  let scans = [];
+  try {
+    const sc = await queryAs(req.session.user.role, req.session.user.id,
+      `SELECT ScanFileId, FileName, OrderItemId, FrameNumber, QualityScore, QualityStatus, UploadedAt
+       FROM arc.ScanFiles
+       WHERE OrderId = @OrderId AND IsDeleted = 0
+       ORDER BY UploadedAt DESC, FrameNumber`,
+      { OrderId: int(id) });
+    scans = sc.recordset;
+  } catch (e) {
+    console.error('[owner] Không lấy được danh sách scan:', e.message);
+  }
+  return res.render('owner/order-detail', { title: 'Đơn ' + detail.order.OrderCode, ...detail, scans, stages: reference.stages });
 });
 router.post('/owner/orders/:id/stage', ownerOnly, async (req, res) => {
   const id = positiveId(req.params.id);

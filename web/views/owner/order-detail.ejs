@@ -36,6 +36,10 @@
 <p class="muted">Chỉ upload khi đơn ở giai đoạn scan hợp lệ và có dịch vụ scan. File lưu riêng; metadata được ghi bằng procedure.</p>
 <button type="submit" class="btn">Tải ảnh scan</button>
 </form>
+<h2>Ảnh scan đã tải (<%= scans.length %>)</h2>
+<% if(!scans.length){ %><div class="card empty">Chưa có ảnh scan cho đơn này.</div><% } else { %>
+<div class="table-wrap"><table class="table"><thead><tr><th>Tên file</th><th>Dòng đơn</th><th class="num">Khung</th><th class="num">Điểm chất lượng</th><th>Trạng thái</th><th>Tải lên lúc</th></tr></thead><tbody><% scans.forEach(function(s){ %><tr><td><%= s.FileName %></td><td><%= s.OrderItemId ? '#' + s.OrderItemId : '—' %></td><td class="num"><%= s.FrameNumber || '—' %></td><td class="num"><%= s.QualityScore === null || s.QualityScore === undefined ? '—' : Number(s.QualityScore).toFixed(2) %></td><td><span class="badge <%= s.QualityStatus==='Passed'?'badge-success':'badge-warning' %>"><%= s.QualityStatus %></span></td><td><%= s.UploadedAt?new Date(s.UploadedAt).toLocaleString('vi-VN'):'—' %></td></tr><% }) %></tbody></table></div>
+<p class="muted">Điểm do AI chấm nền sau khi tải lên; nếu còn trống, tải lại trang sau vài giây.</p><% } %>
 <h2>Lịch sử tiến độ</h2>
 <% if(!timeline.length){ %><div class="card empty">Chưa có lịch sử cập nhật.</div><% } else { %><div class="table-wrap"><table class="table"><thead><tr><th>Thời gian</th><th>Trạng thái</th><th>Người thao tác</th><th>Ghi chú</th></tr></thead><tbody><% timeline.forEach(function(t){ %><tr><td><%= t.ChangedAt?new Date(t.ChangedAt).toLocaleString('vi-VN'):'—' %></td><td><%= t.ToStageName %></td><td><%= t.ChangedByName||'Hệ thống' %></td><td><%= t.Note || '—' %></td></tr><% }) %></tbody></table></div><% } %>
 <h2>Lịch sử thanh toán</h2>
