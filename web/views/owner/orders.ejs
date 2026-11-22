@@ -1,6 +1,6 @@
 <%- include('../partials/header') %>
 <h1>Quản lý đơn hàng</h1>
-<p class="muted">Đơn hàng từ khách được lưu và cập nhật trên SQL Server. Khách tạo đơn ở <code>/orders/new</code>; chủ lab xử lý đơn tại đây.</p>
+<p class="muted">Các đơn khách đặt tại lab của bạn. Xem chi tiết và cập nhật trạng thái xử lý ngay tại đây.</p>
 <p><a class="btn btn-outline" href="/owner/labs">Danh sách lab</a> <a class="btn btn-outline" href="/owner/revenue">Doanh thu</a></p>
 <form method="get" action="/owner/orders" class="card form">
 <label>Chi nhánh <select name="lab"><option value="">Tất cả lab</option><% labs.forEach(function(l){ %><option value="<%= l.LabId %>" <%= labId===l.LabId?'selected':'' %>><%= l.LabName %></option><% }) %></select></label>

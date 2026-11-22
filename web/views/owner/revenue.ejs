@@ -1,6 +1,6 @@
 <%- include('../partials/header') %>
 <h1>Doanh thu chủ lab</h1>
-<p class="muted">Số liệu đọc trực tiếp từ <code>ord.vw_LabRevenue</code>. Doanh thu chỉ tính đơn đã hoàn tất và đã thanh toán.</p>
+<p class="muted">Doanh thu chỉ tính các đơn đã hoàn tất và đã thanh toán.</p>
 <div class="grid">
 <div class="card"><div class="muted">Số đơn</div><h2><%= totals.TotalOrders.toLocaleString('vi-VN') %></h2></div>
 <div class="card"><div class="muted">Đơn hoàn thành</div><h2><%= totals.CompletedOrders.toLocaleString('vi-VN') %></h2></div>
