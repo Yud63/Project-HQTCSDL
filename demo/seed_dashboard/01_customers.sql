@@ -3,7 +3,7 @@
    Purpose : Seed dashboard C1 - 3 Customer mới + 2 LabOwner mới + địa chỉ cho Customer.
    Re-run  : Chạy lại được (kiểm tra theo Email / RoleCode / Label, không tạo trùng).
    Chạy    : sqlcmd -S localhost -E -C -f 65001 -d FilmLabDB -i demo\seed_dashboard\01_customers.sql
-   Lưu ý   : KHÔNG đưa vào 99_run_all.sql / build.cmd. Hash là placeholder, các tài khoản này không đăng nhập web được.
+   Lưu ý   : KHÔNG đưa vào 99_run_all.sql / build.cmd. Mật khẩu demo của các tài khoản này: Demo@12345.
    ============================================================ */
 USE FilmLabDB;
 GO
@@ -34,7 +34,7 @@ BEGIN
     SET @Uid = (SELECT UserId FROM iam.Users WHERE Email = @Email AND IsDeleted = 0);
 
     IF @Uid IS NULL
-        EXEC iam.sp_RegisterUser @Email = @Email, @FullName = @Name, @PasswordHash = N'SEED-ONLY-NOT-A-REAL-HASH',
+        EXEC iam.sp_RegisterUser @Email = @Email, @FullName = @Name, @PasswordHash = N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2',
                                  @Phone = @Phone, @NewUserId = @Uid OUTPUT;   -- tự gán role Customer
 
     IF @IsOwner = 1

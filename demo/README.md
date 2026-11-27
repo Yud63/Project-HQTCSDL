@@ -79,6 +79,6 @@ Sửa hoặc thêm dữ liệu:
 Lưu ý:
 
 - Nội dung chunk về nhiếp ảnh phim (nhiệt độ, thời gian, đặc điểm phim) là **tham khảo**, viết cho demo từ kiến thức chung. Cần đối chiếu datasheet của hãng (Kodak, Ilford, Fujifilm) nếu dùng cho báo cáo chính thức. Hai chunk "Đặt đơn FilmLab" mô tả đúng hành vi hiện tại của hệ thống.
-- Tên, email, số điện thoại, địa chỉ trong seed là dữ liệu giả. 5 tài khoản mới dùng hash giả `SEED-ONLY-NOT-A-REAL-HASH` nên **không đăng nhập web được**.
+- Tên, email, số điện thoại, địa chỉ trong seed là dữ liệu giả. Mọi tài khoản seed dùng chung mật khẩu `Demo@12345`.
 - Lab Suspended không nhận đơn mới (lỗi 50302), dùng để demo chặn đặt đơn.
 - Backup trước khi chạy test: xem `database/10_backup/`. Bản sao lưu dùng khi chạy lại test nên đặt ngoài repo (`*.bak` đã được `.gitignore` bỏ qua).

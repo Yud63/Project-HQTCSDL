@@ -56,9 +56,9 @@ ref["mkt"] = HDR + "-- Danh mục loại hàng Marketplace\n" + ins("mkt.Listing
  ("1",n("CAMERA"),n("Máy ảnh")),("2",n("LENS"),n("Ống kính")),("3",n("FILM"),n("Phim")),
  ("4",n("FLASH"),n("Đèn flash")),("5",n("ACCESSORY"),n("Phụ kiện")),("6",n("OTHER"),n("Khác"))])
 
-HASH = n("SEED-ONLY-NOT-A-REAL-HASH")
+HASH = n("$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2")
 iam_sample = HDR + """-- Dữ liệu mẫu iam. Không gắn cứng ID IDENTITY: tra bằng Email / RoleCode (Conventions mục 8).
--- Mật khẩu là hash giả, chỉ để demo; tầng web tạo hash thật khi đăng ký.
+-- Mật khẩu demo chung cho mọi tài khoản seed: Demo@12345 (bcrypt cost 10).
 """ + ins("iam.Users", ["Email","AuthProvider","PasswordHash","FullName","Phone"], [
  (n("admin@filmlab.vn"),n("Local"),HASH,n("Nguyễn Quản Trị"),n("0900000001")),
  (n("lab.saigon@filmlab.vn"),n("Local"),HASH,n("Trần Minh Khoa"),n("0900000002")),

@@ -17,15 +17,15 @@ GO
 SET NOCOUNT ON;
 
 -- Dữ liệu mẫu iam. Không gắn cứng ID IDENTITY: tra bằng Email / RoleCode (Conventions mục 8).
--- Mật khẩu là hash giả, chỉ để demo; tầng web tạo hash thật khi đăng ký.
+-- Mật khẩu demo chung cho mọi tài khoản seed: Demo@12345 (bcrypt cost 10).
 INSERT INTO iam.Users (Email, AuthProvider, PasswordHash, FullName, Phone) VALUES
-    (N'admin@filmlab.vn', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Nguyễn Quản Trị', N'0900000001'),
-    (N'lab.saigon@filmlab.vn', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Trần Minh Khoa', N'0900000002'),
-    (N'lab.hanoi@filmlab.vn', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Lê Thu Hà', N'0900000003'),
-    (N'expert@filmlab.vn', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Phạm Quang Huy', N'0900000004'),
-    (N'shipper@filmlab.vn', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Võ Văn Tài', N'0900000005'),
-    (N'an.nguyen@example.com', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Nguyễn Hoàng An', N'0911000001'),
-    (N'binh.tran@example.com', N'Local', N'SEED-ONLY-NOT-A-REAL-HASH', N'Trần Gia Bình', N'0911000002'),
+    (N'admin@filmlab.vn', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Nguyễn Quản Trị', N'0900000001'),
+    (N'lab.saigon@filmlab.vn', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Trần Minh Khoa', N'0900000002'),
+    (N'lab.hanoi@filmlab.vn', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Lê Thu Hà', N'0900000003'),
+    (N'expert@filmlab.vn', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Phạm Quang Huy', N'0900000004'),
+    (N'shipper@filmlab.vn', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Võ Văn Tài', N'0900000005'),
+    (N'an.nguyen@example.com', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Nguyễn Hoàng An', N'0911000001'),
+    (N'binh.tran@example.com', N'Local', N'$2b$10$3La880TLQK02xLPJIGOqIe5tS64PmmHiEd/kmZ7fCgkBNRuytGoN2', N'Trần Gia Bình', N'0911000002'),
     (N'chi.le@example.com', N'Google', NULL, N'Lê Phương Chi', N'0911000003');
 GO
 
