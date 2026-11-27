@@ -359,7 +359,8 @@ tiers = ["01_tables","02_foreign_keys","03_indexes","04_seed/reference","04_seed
 p.append("| (mọi tầng) | " + ", ".join("`%s.sql` -> %s" % (u[2], owner_of[u[0]]) for u in P.UNITS) + " | theo module |")
 p.append("| `09_security`, `10_backup`, `99_run_all.sql`, `tests/00_smoke_test.sql`, `docs/`, `tools/` | | A |")
 p.append("| `tests/` (test nghiệp vụ), `demo/` | | C |")
-p.append("| `web/` | | E |")
+p.append("| `backend/` | | E |")
+p.append("| `frontend/` | | E |")
 p.append("")
 
 p.append("## 9. Rủi ro nhân sự\n")

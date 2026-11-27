@@ -4,7 +4,7 @@ const router = require('express').Router();
 const { requireLogin, requireRole } = require('../lib/auth');
 router.use('/recommend', requireLogin, requireRole('Customer'));
 const { sql, queryAs } = require('../lib/db');
-const gemini = require('../lib/gemini');
+const gemini = require('../chatbot/gemini');
 
 // Danh sách gợi ý Lab
 router.get('/recommend', async (req, res, next) => {

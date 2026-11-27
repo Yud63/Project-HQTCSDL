@@ -256,7 +256,7 @@ Menu đã khai báo trước các URL dưới đây. Trang nào chưa có route 
 
 ### Upload (quyết định D3)
 
-File tải lên lưu ở `web/uploads/` (thư viện `multer` đã cài, đường dẫn lấy từ `config.uploadDir`). Thư mục này nằm trong `.gitignore`, không commit.
+File tải lên lưu ở `backend/uploads/` (thư viện `multer` đã cài, đường dẫn lấy từ `config.uploadDir`). Thư mục này nằm trong `.gitignore`, không commit.
 
 ## 7. Phân công màn hình
 

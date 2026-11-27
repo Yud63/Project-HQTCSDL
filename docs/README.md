@@ -22,4 +22,4 @@
 | `../tests/README.md` | Danh sách test 00-22 |
 | `../demo/README.md` | Kịch bản demo và dữ liệu dashboard |
 | `../database/10_backup/README.md` | Backup/restore, Execution Plan trước/sau index, demo khóa UPDLOCK/HOLDLOCK |
-| `../web/README.md` | Web demo gọi Stored Procedure (đang chuẩn bị) |
+| `../backend/README.md` | Web demo gọi Stored Procedure (đang chuẩn bị) |

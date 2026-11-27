@@ -4,8 +4,8 @@ const router = require('express').Router();
 const { sql } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
 const { HttpError } = require('../lib/errors');
-const gemini = require('../lib/gemini');
-const chatTools = require('../lib/chatTools');
+const gemini = require('./gemini');
+const chatTools = require('./chatTools');
 const { chatLimiter } = require('../lib/rateLimit');
 
 const CHAT_ROLES = ['Customer', 'LabOwner', 'Expert'];

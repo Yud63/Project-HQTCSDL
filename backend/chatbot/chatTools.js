@@ -1,5 +1,5 @@
 'use strict';
-const { sql } = require('./db');
+const { sql } = require('../lib/db');
 
 const ORDER_CODE_RE = /FL-\d{4}-\d{6}/i;
 const STATUS_WORDS = ['đến đâu', 'trạng thái', 'tình trạng', 'tiến độ', 'bao giờ xong'];

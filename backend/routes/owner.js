@@ -9,7 +9,7 @@ const { sql, queryAs, callProc } = require('../lib/db');
 const { requireRole } = require('../lib/auth');
 const { HttpError, mapDbError } = require('../lib/errors');
 const { uploadDir } = require('../lib/config');
-const { scoreScan } = require('../lib/gemini');
+const { scoreScan } = require('../chatbot/gemini');
 
 const ownerOnly = requireRole('LabOwner');
 const scansDir = path.join(uploadDir, 'owner');

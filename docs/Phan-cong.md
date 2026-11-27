@@ -108,7 +108,8 @@ Mỗi tầng có một file riêng cho từng module. Chỉ người sở hữu 
 | (mọi tầng) | `iam.sql` -> A, `lab.sql` -> B, `ord.sql` -> B, `ord_feedback.sql` -> C, `dlv.sql` -> A, `arc.sql` -> C, `mkt.sql` -> D, `com.sql` -> D, `ai.sql` -> E, `audit.sql` -> A | theo module |
 | `09_security`, `10_backup`, `99_run_all.sql`, `tests/00_smoke_test.sql`, `docs/`, `tools/` | | A |
 | `tests/` (test nghiệp vụ), `demo/` | | C |
-| `web/` | | E |
+| `backend/` | | E |
+| `frontend/` | | E |
 
 ## 9. Rủi ro nhân sự
 

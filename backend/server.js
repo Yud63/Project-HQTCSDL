@@ -16,7 +16,7 @@ const app = express();
 app.disable('x-powered-by');
 if (config.behindProxy) app.set('trust proxy', 1);
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', path.join(__dirname, '..', 'frontend', 'views'));
 
 fs.mkdirSync(config.uploadDir, { recursive: true });
 
@@ -38,7 +38,7 @@ app.use(helmet({
   hsts: config.behindProxy,
 }));
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, '..', 'frontend', 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -90,6 +90,9 @@ for (const file of fs.readdirSync(routesDir).filter((f) => f.endsWith('.js')).so
   }
 }
 
+// Chatbot nằm riêng trong backend/chatbot/ (không nằm trong routes/ nên không tự nạp)
+app.use(require('./chatbot/chat'));
+console.log('  nạp chatbot/chat.js');
 app.use(notFound);
 app.use(errorHandler);
 

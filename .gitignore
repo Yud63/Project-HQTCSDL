@@ -12,10 +12,10 @@
 Thumbs.db
 
 # Web build output
-web/node_modules/
-web/bin/
-web/obj/
-web/dist/
+backend/node_modules/
+backend/bin/
+backend/obj/
+backend/dist/
 
 # Python
 __pycache__/

@@ -1,5 +1,5 @@
 'use strict';
-const config = require('./config');
+const config = require('../lib/config');
 const sharp = require('sharp');
 
 const ENDPOINT = 'https://generativelanguage.googleapis.com/v1beta/models';
