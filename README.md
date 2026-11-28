@@ -53,10 +53,10 @@ DB đã dựng từ trước khi có session store phải bổ sung bảng `iam.
 
 | Đối tượng | Số lượng |
 |---|---|
-| Bảng | 41 |
+| Bảng | 41 thiết kế gốc, thực tế 42 (thêm `iam.Sessions` cho session store) |
 | Khóa ngoại | 77 |
 | Procedure | 81 (61 theo kế hoạch, trong đó 16 bắt buộc; 20 bổ sung cho web) |
-| Function | 16 |
+| Function | 27 (16 nghiệp vụ + 11 hàm predicate RLS ở schema `sec`) |
 | Trigger | 28 |
 | View | 14 |
 | Role | 7 |
